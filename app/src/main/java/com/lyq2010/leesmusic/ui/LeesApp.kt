@@ -95,32 +95,34 @@ fun LeesApp() {
     var isPlaying by remember { mutableStateOf(false) }
     var positionMs by remember { mutableStateOf(0L) }
     var durationMs by remember { mutableStateOf(0L) }
-    androidx.compose.runtime.DisposableEffect(appPlayer) {
+    LaunchedEffect(appPlayer) {
+        while (appPlayer.playerOrNull() == null) {
+            kotlinx.coroutines.delay(50)
+        }
+        val player = appPlayer.playerOrNull() ?: return@LaunchedEffect
         val listener = object : androidx.media3.common.Player.Listener {
             override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
-                nowPlayingTitle = appPlayer.player.currentSongTitle()
-                currentSong = appPlayer.songs.getOrNull(appPlayer.player.currentMediaItemIndex)
+                nowPlayingTitle = player.currentSongTitle()
+                currentSong = appPlayer.songs.getOrNull(player.currentMediaItemIndex)
             }
 
             override fun onIsPlayingChanged(playing: Boolean) {
                 isPlaying = playing
-                nowPlayingTitle = appPlayer.player.currentSongTitle()
-                positionMs = appPlayer.player.currentPosition.coerceAtLeast(0L)
-                if (appPlayer.player.duration > 0) durationMs = appPlayer.player.duration
+                nowPlayingTitle = player.currentSongTitle()
+                positionMs = player.currentPosition.coerceAtLeast(0L)
+                if (player.duration > 0) durationMs = player.duration
             }
         }
-        appPlayer.player.addListener(listener)
-        onDispose {
-            appPlayer.player.removeListener(listener)
-            appPlayer.release()
-        }
-    }
-    LaunchedEffect(appPlayer) {
-        while (true) {
-            positionMs = appPlayer.player.currentPosition.coerceAtLeast(0L)
-            if (appPlayer.player.duration > 0) durationMs = appPlayer.player.duration
-            isPlaying = appPlayer.player.isPlaying
-            kotlinx.coroutines.delay(500)
+        player.addListener(listener)
+        try {
+            while (true) {
+                positionMs = player.currentPosition.coerceAtLeast(0L)
+                if (player.duration > 0) durationMs = player.duration
+                isPlaying = player.isPlaying
+                kotlinx.coroutines.delay(500)
+            }
+        } finally {
+            player.removeListener(listener)
         }
     }
 
@@ -294,12 +296,13 @@ fun LeesApp() {
                 onOpenPlayer = { nav.navigate(Routes.Player) },
                 onOpenAlbum = { album -> openAlbum(album) },
                 onTogglePlay = {
-                    if (appPlayer.player.mediaItemCount == 0) {
+                    val player = appPlayer.playerOrNull()
+                    if (player == null || player.mediaItemCount == 0) {
                         playSongs(daily, 0)
-                    } else if (appPlayer.player.isPlaying) {
-                        appPlayer.player.pause()
+                    } else if (player.isPlaying) {
+                        player.pause()
                     } else {
-                        appPlayer.player.play()
+                        player.play()
                     }
                 },
                 onSearch = { query ->
@@ -354,13 +357,16 @@ fun LeesApp() {
                 isPlaying = isPlaying,
                 positionMs = positionMs,
                 durationMs = durationMs,
-                onSeek = { appPlayer.player.seekTo(it) },
+                onSeek = { appPlayer.playerOrNull()?.seekTo(it) },
                 onPlayPause = {
-                    if (appPlayer.player.isPlaying) appPlayer.player.pause() else appPlayer.player.play()
+                    val player = appPlayer.playerOrNull()
+                    if (player != null) {
+                        if (player.isPlaying) player.pause() else player.play()
+                    }
                 },
-                onPrevious = { appPlayer.player.seekToPreviousMediaItem() },
-                onNext = { appPlayer.player.seekToNextMediaItem() },
-                onVolume = { appPlayer.player.volume = it },
+                onPrevious = { appPlayer.playerOrNull()?.seekToPreviousMediaItem() },
+                onNext = { appPlayer.playerOrNull()?.seekToNextMediaItem() },
+                onVolume = { level -> appPlayer.playerOrNull()?.let { it.volume = level } },
                 onBack = { nav.popBackStack() },
                 onOpenLyrics = { nav.navigate(Routes.Lyrics) },
             )
