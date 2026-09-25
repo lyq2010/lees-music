@@ -27,7 +27,7 @@ class AppPlayer(context: Context) {
         }
         player.setMediaItems(items, index.coerceIn(0, items.lastIndex), 0)
         player.prepare()
-        player.play()
+        player.playWhenReady = false
     }
 
     fun release() {

@@ -181,6 +181,7 @@ fun LeesApp() {
         appPlayer.play(SubsonicServer(current.url, current.username, current.password), songs, index)
         currentSong = songs[index]
         nowPlayingTitle = songs[index].title
+        nav.navigate(Routes.Player)
     }
 
     fun openAlbum(album: com.lyq2010.leesmusic.ui.catalog.LibraryAlbum) {
@@ -264,6 +265,10 @@ fun LeesApp() {
                 onOpenDaily = { nav.navigate(Routes.Daily) },
                 onRefreshDaily = { refreshDaily() },
                 nowPlayingTitle = nowPlayingTitle,
+                nowPlayingArtist = currentSong?.artist.orEmpty(),
+                nowPlayingCoverId = currentSong?.coverArtId,
+                nowPlayingCoverUrl = currentSong?.coverUrl,
+                isPlaying = isPlaying,
                 onOpenPlayer = { nav.navigate(Routes.Player) },
                 onOpenAlbum = { album -> openAlbum(album) },
                 onTogglePlay = {

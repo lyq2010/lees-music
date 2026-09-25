@@ -8,7 +8,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MusicNote
@@ -52,6 +57,10 @@ fun AppShell(
     onRefreshDaily: () -> Unit,
     onSearch: (String) -> Unit,
     nowPlayingTitle: String,
+    nowPlayingArtist: String,
+    nowPlayingCoverId: String?,
+    nowPlayingCoverUrl: String?,
+    isPlaying: Boolean,
     onTogglePlay: () -> Unit,
     onOpenPlayer: () -> Unit,
     onOpenAlbum: (com.lyq2010.leesmusic.ui.catalog.LibraryAlbum) -> Unit,
@@ -67,14 +76,35 @@ fun AppShell(
                 else -> SettingsScreen(onOpenServer)
             }
         }
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onOpenPlayer)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(nowPlayingTitle.ifBlank { "还没有在播放" }, color = ShellText, fontSize = 14.sp)
+        Surface(color = ShellCard, modifier = Modifier.fillMaxWidth()) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(64.dp)
+                    .clickable(onClick = onOpenPlayer)
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                com.lyq2010.leesmusic.ui.catalog.RemoteCover(
+                    nowPlayingCoverId,
+                    nowPlayingCoverUrl,
+                    Modifier.size(44.dp).clip(RoundedCornerShape(6.dp)),
+                    http,
+                )
+                Column(Modifier.padding(start = 10.dp).weight(1f)) {
+                    Text(nowPlayingTitle.ifBlank { "还没有在播放" }, color = ShellText, fontSize = 15.sp, maxLines = 1)
+                    if (nowPlayingArtist.isNotBlank()) {
+                        Text(nowPlayingArtist, color = ShellMuted, fontSize = 12.sp, maxLines = 1)
+                    }
+                }
+                IconButton(onClick = onTogglePlay) {
+                    Icon(
+                        if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isPlaying) "暂停" else "播放",
+                        tint = ShellText,
+                    )
+                }
+            }
         }
         Row(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
             tabs.forEachIndexed { index, label ->
