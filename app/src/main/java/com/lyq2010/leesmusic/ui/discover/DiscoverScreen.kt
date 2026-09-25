@@ -108,21 +108,34 @@ private fun DailyCard(
             .padding(top = 16.dp)
             .fillMaxWidth()
             .height(190.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .clickable(onClick = onOpen),
+            .clip(RoundedCornerShape(18.dp)),
     ) {
         RemoteCover(cover?.coverArtId, cover?.coverUrl, Modifier.matchParentSize(), http)
         Box(Modifier.matchParentSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.38f)))
         Column(Modifier.align(androidx.compose.ui.Alignment.BottomStart).padding(16.dp)) {
             Text("每日推荐", color = ShellText, fontSize = 13.sp)
             Text(cover?.title ?: "正在准备", color = ShellText, fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            Text(if (refreshing) "正在更新" else "50 首歌曲    查看全部  >", color = ShellText, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
+            Text(
+                if (refreshing) "正在更新" else "50 首歌曲    查看全部  >",
+                color = ShellText,
+                fontSize = 13.sp,
+                modifier = Modifier.padding(top = 4.dp).clickable(onClick = onOpen),
+            )
         }
         IconButton(onClick = onRefresh, modifier = Modifier.align(androidx.compose.ui.Alignment.TopStart), enabled = !refreshing) {
             Icon(Icons.Filled.Refresh, contentDescription = "刷新每日推荐", tint = ShellText)
         }
-        IconButton(onClick = onPlay, modifier = Modifier.align(androidx.compose.ui.Alignment.TopEnd)) {
-            Icon(Icons.Filled.PlayArrow, contentDescription = "打开播放页", tint = ShellText)
+        Box(
+            Modifier
+                .align(androidx.compose.ui.Alignment.TopEnd)
+                .padding(12.dp)
+                .size(44.dp)
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f))
+                .clickable(onClick = onPlay),
+            contentAlignment = androidx.compose.ui.Alignment.Center,
+        ) {
+            Icon(Icons.Filled.PlayArrow, contentDescription = "顺序播放每日推荐", tint = ShellText)
         }
     }
 }

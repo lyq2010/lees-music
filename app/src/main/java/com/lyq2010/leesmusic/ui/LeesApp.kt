@@ -283,7 +283,7 @@ fun LeesApp() {
                 daily = daily,
                 refreshingDaily = refreshingDaily,
                 onOpenDaily = { nav.navigate(Routes.Daily) },
-                onPlayDaily = { if (daily.isNotEmpty()) playSongs(daily, 0) },
+                onPlayDaily = { if (daily.isNotEmpty()) playSongs(daily, 0, start = true, openPlayer = true) },
                 onRefreshDaily = { refreshDaily() },
                 showPlayerBar = currentSong != null,
                 nowPlayingTitle = nowPlayingTitle,
