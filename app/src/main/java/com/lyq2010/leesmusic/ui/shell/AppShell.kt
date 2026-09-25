@@ -46,6 +46,10 @@ fun AppShell(
     searchResults: List<String>,
     libraryMessage: String,
     http: okhttp3.OkHttpClient,
+    daily: List<com.lyq2010.leesmusic.ui.catalog.LibrarySong>,
+    refreshingDaily: Boolean,
+    onOpenDaily: () -> Unit,
+    onRefreshDaily: () -> Unit,
     onSearch: (String) -> Unit,
     onOpenServer: () -> Unit,
 ) {
@@ -54,7 +58,7 @@ fun AppShell(
         Column(Modifier.weight(1f)) {
             when (tab) {
                 0 -> LibraryScreen(serverLabel, newest, libraryMessage, http)
-                1 -> DiscoverScreen(newest, recent, frequent, randomAlbums, http, libraryMessage)
+                1 -> DiscoverScreen(daily, refreshingDaily, onOpenDaily, onRefreshDaily, newest, recent, frequent, randomAlbums, http, libraryMessage)
                 2 -> SearchScreen(searchResults, onSearch)
                 else -> SettingsScreen(onOpenServer)
             }

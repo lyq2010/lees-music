@@ -20,6 +20,9 @@ class SubsonicClient(
     fun albums(server: SubsonicServer, type: String): List<Album> =
         call(server, "getAlbumList2", mapOf("type" to type, "size" to "20")).albumList2?.album.orEmpty()
 
+    fun randomSongs(server: SubsonicServer, size: Int = 50): List<Song> =
+        call(server, "getRandomSongs", mapOf("size" to size.toString())).randomSongs?.song.orEmpty()
+
     fun search(server: SubsonicServer, query: String): SearchResult =
         call(server, "search3", mapOf("query" to query, "songCount" to "20", "albumCount" to "12", "artistCount" to "12"))
             .searchResult3 ?: SearchResult()
@@ -35,6 +38,7 @@ class SubsonicClient(
             .addQueryParameter("v", "1.16.1")
             .addQueryParameter("c", "Lee's Music")
             .addQueryParameter("size", "300")
+            .also { }
             .build()
             .toString()
     }

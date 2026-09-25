@@ -15,7 +15,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.lyq2010.leesmusic.data.api.ServerAddressResolver
 import com.lyq2010.leesmusic.data.api.SubsonicClient
+import com.lyq2010.leesmusic.data.api.Song
 import com.lyq2010.leesmusic.data.api.SubsonicServer
+import com.lyq2010.leesmusic.data.library.DailyMixStore
 import com.lyq2010.leesmusic.data.settings.ServerKind
 import com.lyq2010.leesmusic.data.settings.ServerSettings
 import com.lyq2010.leesmusic.data.settings.ServerSettingsStore
@@ -24,6 +26,7 @@ import com.lyq2010.leesmusic.ui.login.AddServerScreen
 import com.lyq2010.leesmusic.ui.login.LoginScreen
 import com.lyq2010.leesmusic.ui.lyrics.LyricsScreen
 import com.lyq2010.leesmusic.ui.player.PlayerScreen
+import com.lyq2010.leesmusic.ui.playlist.DailyPlaylistScreen
 import com.lyq2010.leesmusic.ui.shell.AppShell
 import com.lyq2010.leesmusic.ui.welcome.WelcomeScreen
 import kotlinx.coroutines.Dispatchers
@@ -39,12 +42,14 @@ private object Routes {
     const val Login = "login"
     const val AddServer = "add-server"
     const val Welcome = "welcome"
+    const val Daily = "daily"
 }
 
 @Composable
 fun LeesApp() {
     val context = LocalContext.current
     val store = remember { ServerSettingsStore(context) }
+    val mixStore = remember { DailyMixStore(context) }
     val probeClient = remember {
         OkHttpClient.Builder()
             .connectTimeout(1500, TimeUnit.MILLISECONDS)
@@ -66,6 +71,8 @@ fun LeesApp() {
     var randomAlbums by remember { mutableStateOf<List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>>(emptyList()) }
     var libraryMessage by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<String>>(emptyList()) }
+    var daily by remember { mutableStateOf<List<com.lyq2010.leesmusic.ui.catalog.LibrarySong>>(emptyList()) }
+    var refreshingDaily by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         settings = store.load()
@@ -83,6 +90,7 @@ fun LeesApp() {
                     com.lyq2010.leesmusic.ui.catalog.LibraryAlbum(
                         name = album.name,
                         artist = album.artist,
+                        coverArtId = album.coverArt,
                         coverUrl = album.coverArt?.let { client.coverArtUrl(server, it) },
                     )
                 }
@@ -96,6 +104,18 @@ fun LeesApp() {
             randomAlbums = lists[3]
             libraryMessage = ""
         }.onFailure { libraryMessage = it.message ?: "曲库读取失败" }
+        val saved = mixStore.load()
+        daily = if (saved.isNotEmpty()) mapDaily(current, saved) else loadDaily(current, mixStore, libraryHttp)
+        refreshingDaily = false
+    }
+
+    fun refreshDaily() {
+        val current = settings ?: return
+        scope.launch {
+            refreshingDaily = true
+            daily = loadDaily(current, mixStore, libraryHttp)
+            refreshingDaily = false
+        }
     }
     if (!ready) return
 
@@ -141,6 +161,10 @@ fun LeesApp() {
                 searchResults = searchResults,
                 libraryMessage = libraryMessage,
                 http = libraryHttp,
+                daily = daily,
+                refreshingDaily = refreshingDaily,
+                onOpenDaily = { nav.navigate(Routes.Daily) },
+                onRefreshDaily = { refreshDaily() },
                 onSearch = { query ->
                     val current = settings
                     if (current == null || query.isBlank() || current.kind != ServerKind.Navidrome) {
@@ -160,6 +184,9 @@ fun LeesApp() {
                     nav.navigate(Routes.Login)
                 },
             )
+        }
+        composable(Routes.Daily) {
+            DailyPlaylistScreen(songs = daily, http = libraryHttp, onBack = { nav.popBackStack() })
         }
         composable(Routes.Player) {
             PlayerScreen(
@@ -193,5 +220,43 @@ fun LeesApp() {
                 onSave = ::connect,
             )
         }
+    }
+}
+
+private suspend fun loadDaily(
+    settings: ServerSettings,
+    store: DailyMixStore,
+    http: OkHttpClient,
+): List<com.lyq2010.leesmusic.ui.catalog.LibrarySong> = withContext(Dispatchers.IO) {
+    val client = SubsonicClient(http)
+    val server = SubsonicServer(settings.url, settings.username, settings.password)
+    val songs = client.randomSongs(server, 50)
+    store.save(songs)
+    mapDaily(settings, songs, client, server)
+}
+
+private fun mapDaily(
+    settings: ServerSettings,
+    songs: List<Song>,
+): List<com.lyq2010.leesmusic.ui.catalog.LibrarySong> {
+    val client = SubsonicClient()
+    val server = SubsonicServer(settings.url, settings.username, settings.password)
+    return mapDaily(settings, songs, client, server)
+}
+
+private fun mapDaily(
+    settings: ServerSettings,
+    songs: List<Song>,
+    client: SubsonicClient,
+    server: SubsonicServer,
+): List<com.lyq2010.leesmusic.ui.catalog.LibrarySong> {
+    return songs.map { song ->
+        com.lyq2010.leesmusic.ui.catalog.LibrarySong(
+            id = song.id,
+            title = song.title,
+            artist = song.artist,
+            coverArtId = song.coverArt,
+            coverUrl = song.coverArt?.let { client.coverArtUrl(server, it) },
+        )
     }
 }

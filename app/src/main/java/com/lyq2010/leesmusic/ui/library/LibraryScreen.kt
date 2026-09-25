@@ -71,6 +71,7 @@ fun LibraryScreen(
             newest.take(8).forEach { album ->
                 Row(Modifier.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     com.lyq2010.leesmusic.ui.catalog.RemoteCover(
+                        album.coverArtId,
                         album.coverUrl,
                         Modifier.size(48.dp).clip(RoundedCornerShape(6.dp)),
                         http,
