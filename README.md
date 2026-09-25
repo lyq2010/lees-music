@@ -1,6 +1,6 @@
 # Lee's Music
 
-连接自建 [Navidrome](https://www.navidrome.org/) 音乐库的安卓播放器，支持内网和外网远程访问。
+连接自建音乐库的安卓播放器，支持内网和外网远程访问。服务器可以是 Navidrome、Emby 或 Plex。
 
 > 状态：工程骨架已能构建，功能尚未开发。进度与交接信息见 [HANDOFF.md](HANDOFF.md)。
 
@@ -16,6 +16,7 @@ Lee's Music 的首要目标是在同样的网络和代理条件下稳定播放�
 - 后台播放，通知栏、锁屏和蓝牙控制
 - 内外网双地址：在家用内网，出门自动切到外网
 - 同步歌词
+- 服务器：Navidrome、Emby、Plex。目前只有 Navidrome 能登录并探测地址；Emby 和 Plex 可以先保存地址，接口还没接
 - 同步回 Navidrome：正在播放、播放次数、收藏、评分
 - 无缝播放、ReplayGain 音量均衡
 - 封面驱动的 Material 3 Expressive 界面：配色随当前专辑封面变化

@@ -57,7 +57,9 @@ Set-Location D:\Desktop\codex\lees-music
   - 字节码目标 17，minSdk 26。
 - **Compose Material 3**：用 1.5.0-alpha 系列并锁定版本，目前锁定 alpha29（规划时最新是 alpha28，建工程时已出 alpha29）。Expressive API 在稳定版 1.4.0 里还没有。
 - **JDK**：用 Android Studio 自带的 JBR（OpenJDK 25.0.3）。不用 `lees-pdf\.tools\jdk`（Temurin 25），不改全局 `JAVA_HOME` 和 PATH。
-- **服务端**：只对接 Subsonic / OpenSubsonic API。认证用 token + salt，因为 Navidrome 还不支持 `apiKeyAuthentication`。启动时调用 `getOpenSubsonicExtensions` 探测服务端能力。
+- **服务端**：Navidrome、Emby、Plex。登录页可以选择这三种，选择会存进 DataStore。
+  - Navidrome 走 Subsonic / OpenSubsonic API，认证用 token + salt，因为 Navidrome 还不支持 `apiKeyAuthentication`。启动时调用 `getOpenSubsonicExtensions` 探测服务端能力。
+  - Emby 和 Plex 的接口还没写。选了它们只能保存地址，不能播放。
 - **内外网双地址**：先用约 1.5 秒超时探测内网的 `ping.view`，失败再回退到外网 HTTPS。不读 Wi-Fi SSID，因此不需要定位权限。
   - 登录页已做好。密码用 Android Keystore 的 AES-GCM 加密后放进 DataStore。
   - 内网允许明文 HTTP（`network_security_config`）。外网地址不是 `https://` 会直接拒绝。
