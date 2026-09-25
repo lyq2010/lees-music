@@ -42,7 +42,7 @@ Set-Location D:\Desktop\codex\lees-music
 
 ## 下一步
 
-1. **登录和地址切换**：`SubsonicClient` 已能 `ping` 和 `getAlbumList2`，还没接到界面上，也还没有服务器地址和密码的保存。
+1. **主页改读曲库**：登录页已能保存地址和密码，并探测内网还是外网。主页专辑仍是示例数据。
 
 后续顺序：API 客户端 → 内外网地址切换 → 防断连播放管线 → 浏览界面 → 播放服务 → ReplayGain → 歌词 → scrobble/收藏/评分 → 连接日志 → 真机验收。
 
@@ -59,6 +59,9 @@ Set-Location D:\Desktop\codex\lees-music
 - **JDK**：用 Android Studio 自带的 JBR（OpenJDK 25.0.3）。不用 `lees-pdf\.tools\jdk`（Temurin 25），不改全局 `JAVA_HOME` 和 PATH。
 - **服务端**：只对接 Subsonic / OpenSubsonic API。认证用 token + salt，因为 Navidrome 还不支持 `apiKeyAuthentication`。启动时调用 `getOpenSubsonicExtensions` 探测服务端能力。
 - **内外网双地址**：先用约 1.5 秒超时探测内网的 `ping.view`，失败再回退到外网 HTTPS。不读 Wi-Fi SSID，因此不需要定位权限。
+  - 登录页已做好。密码用 Android Keystore 的 AES-GCM 加密后放进 DataStore。
+  - 内网允许明文 HTTP（`network_security_config`）。外网地址不是 `https://` 会直接拒绝。
+  - 还不会在网络变化时自动重探。
 - **防断连（核心）**
   - 整首歌以原始格式（`format=raw`）预取进 `SimpleCache`，同时预取下一首；
   - 中断后用 `Range` 续传，收到 416 就从头重下，不跳歌；
