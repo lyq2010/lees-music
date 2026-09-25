@@ -1,8 +1,11 @@
 package com.lyq2010.leesmusic.ui.theme
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 
 val Ink = Color(0xFF1E2250)
@@ -22,8 +25,7 @@ private val LeesLight = lightColorScheme(
 
 @Composable
 fun LeesTheme(content: @Composable () -> Unit) {
-    MaterialExpressiveTheme(
-        colorScheme = LeesLight,
-        content = content,
-    )
+    MaterialExpressiveTheme(colorScheme = LeesLight) {
+        Surface(modifier = Modifier.fillMaxSize(), color = Paper, contentColor = Ink, content = content)
+    }
 }
