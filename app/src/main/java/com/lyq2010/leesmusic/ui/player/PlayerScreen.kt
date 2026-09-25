@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Schedule
@@ -50,14 +51,22 @@ import com.lyq2010.leesmusic.ui.theme.Peach
 
 @Composable
 fun PlayerScreen(
-    track: Track,
+    song: com.lyq2010.leesmusic.ui.catalog.LibrarySong?,
+    http: okhttp3.OkHttpClient,
+    isPlaying: Boolean,
+    positionMs: Long,
+    durationMs: Long,
+    onSeek: (Long) -> Unit,
+    onPlayPause: () -> Unit,
+    onVolume: (Float) -> Unit,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
     onBack: () -> Unit,
     onOpenLyrics: () -> Unit,
 ) {
-    val ink = track.cover.playerBackground()
+    val ink = com.lyq2010.leesmusic.ui.theme.Ink
     var favorite by rememberSaveable { mutableStateOf(false) }
-    var position by rememberSaveable { mutableFloatStateOf(134f) }
-    var volume by rememberSaveable { mutableFloatStateOf(0.7f) }
+    var volume by rememberSaveable { mutableFloatStateOf(1f) }
     Column(
         Modifier
             .fillMaxSize()
@@ -67,13 +76,15 @@ fun PlayerScreen(
         IconButton(onClick = onBack, modifier = Modifier.padding(top = 12.dp)) {
             Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "返回", tint = Peach)
         }
-        AlbumCover(
-            track.cover,
+        com.lyq2010.leesmusic.ui.catalog.RemoteCover(
+            song?.coverArtId,
+            song?.coverUrl,
             Modifier
                 .padding(top = 8.dp, start = 28.dp, end = 28.dp)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
                 .border(1.dp, Peach.copy(alpha = 0.35f), RoundedCornerShape(16.dp)),
+            http,
         )
         Row(
             Modifier
@@ -82,8 +93,8 @@ fun PlayerScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                Text(track.title, color = Peach, fontFamily = FontFamily.Serif, fontWeight = FontWeight.SemiBold, fontSize = 32.sp)
-                Text("${track.artist} · ${track.album}", color = Peach.copy(alpha = 0.8f), fontSize = 15.sp)
+                Text(song?.title ?: "还没有在播放", color = Peach, fontFamily = FontFamily.Serif, fontWeight = FontWeight.SemiBold, fontSize = 32.sp)
+                Text(song?.artist.orEmpty(), color = Peach.copy(alpha = 0.8f), fontSize = 15.sp)
             }
             IconButton(onClick = { favorite = !favorite }) {
                 Icon(
@@ -97,14 +108,14 @@ fun PlayerScreen(
             }
         }
         Slider(
-            value = position,
-            onValueChange = { position = it },
-            valueRange = 0f..track.durationSeconds.toFloat(),
+            value = positionMs.coerceAtLeast(0L).toFloat(),
+            onValueChange = { onSeek(it.toLong()) },
+            valueRange = 0f..durationMs.coerceAtLeast(1L).toFloat(),
             modifier = Modifier.padding(top = 12.dp),
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(formatTime(position.toInt()), color = Peach, fontSize = 12.sp)
-            Text(formatTime(track.durationSeconds), color = Peach, fontSize = 12.sp)
+            Text(formatTime((positionMs / 1000).toInt()), color = Peach, fontSize = 12.sp)
+            Text(formatTime((durationMs / 1000).toInt()), color = Peach, fontSize = 12.sp)
         }
         Row(
             Modifier
@@ -114,9 +125,20 @@ fun PlayerScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(Icons.Filled.Shuffle, contentDescription = "随机播放", tint = Peach)
-            Icon(Icons.Filled.SkipPrevious, contentDescription = "上一首", tint = Peach, modifier = Modifier.size(36.dp))
-            Icon(Icons.Filled.PlayArrow, contentDescription = "播放", tint = ink, modifier = Modifier.size(64.dp).background(Peach, androidx.compose.foundation.shape.CircleShape).padding(12.dp))
-            Icon(Icons.Filled.SkipNext, contentDescription = "下一首", tint = Peach, modifier = Modifier.size(36.dp))
+            IconButton(onClick = onPrevious) {
+                Icon(Icons.Filled.SkipPrevious, contentDescription = "上一首", tint = Peach, modifier = Modifier.size(36.dp))
+            }
+            IconButton(onClick = onPlayPause) {
+                Icon(
+                    if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = if (isPlaying) "暂停" else "播放",
+                    tint = ink,
+                    modifier = Modifier.size(64.dp).background(Peach, androidx.compose.foundation.shape.CircleShape).padding(12.dp),
+                )
+            }
+            IconButton(onClick = onNext) {
+                Icon(Icons.Filled.SkipNext, contentDescription = "下一首", tint = Peach, modifier = Modifier.size(36.dp))
+            }
             IconButton(onClick = onOpenLyrics) {
                 Icon(Icons.Filled.MusicNote, contentDescription = "歌词", tint = Peach)
             }
@@ -128,7 +150,7 @@ fun PlayerScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(Icons.AutoMirrored.Filled.VolumeDown, contentDescription = null, tint = Peach)
-            Slider(value = volume, onValueChange = { volume = it }, modifier = Modifier.weight(1f))
+            Slider(value = volume, onValueChange = { volume = it; onVolume(it) }, modifier = Modifier.weight(1f))
             Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "音量", tint = Peach)
         }
         Spacer(Modifier.weight(1f))

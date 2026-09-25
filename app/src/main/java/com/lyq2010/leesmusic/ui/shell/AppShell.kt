@@ -53,6 +53,7 @@ fun AppShell(
     onSearch: (String) -> Unit,
     nowPlayingTitle: String,
     onTogglePlay: () -> Unit,
+    onOpenPlayer: () -> Unit,
     onOpenAlbum: (com.lyq2010.leesmusic.ui.catalog.LibraryAlbum) -> Unit,
     onOpenServer: () -> Unit,
 ) {
@@ -69,7 +70,7 @@ fun AppShell(
         Row(
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onTogglePlay)
+                .clickable(onClick = onOpenPlayer)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
