@@ -19,6 +19,9 @@ import com.lyq2010.leesmusic.data.api.Song
 import com.lyq2010.leesmusic.data.api.SubsonicServer
 import com.lyq2010.leesmusic.data.api.Album
 import com.lyq2010.leesmusic.data.library.DailyMixStore
+import com.lyq2010.leesmusic.data.library.dailyMixIsCurrent
+import com.lyq2010.leesmusic.data.library.millisUntilNextMidnight
+import com.lyq2010.leesmusic.data.library.todayStamp
 import com.lyq2010.leesmusic.data.library.LibraryShelf
 import com.lyq2010.leesmusic.data.library.LibraryShelfStore
 import com.lyq2010.leesmusic.data.settings.ServerKind
@@ -28,6 +31,8 @@ import com.lyq2010.leesmusic.ui.catalog.SampleCatalog
 import com.lyq2010.leesmusic.ui.login.AddServerScreen
 import com.lyq2010.leesmusic.ui.login.LoginScreen
 import com.lyq2010.leesmusic.ui.lyrics.LyricsScreen
+import com.lyq2010.leesmusic.playback.AppPlayer
+import com.lyq2010.leesmusic.playback.currentSongTitle
 import com.lyq2010.leesmusic.ui.player.PlayerScreen
 import com.lyq2010.leesmusic.ui.playlist.DailyPlaylistScreen
 import com.lyq2010.leesmusic.ui.shell.AppShell
@@ -77,6 +82,24 @@ fun LeesApp() {
     var searchResults by remember { mutableStateOf<List<String>>(emptyList()) }
     var daily by remember { mutableStateOf<List<com.lyq2010.leesmusic.ui.catalog.LibrarySong>>(emptyList()) }
     var refreshingDaily by remember { mutableStateOf(false) }
+    val appPlayer = remember { AppPlayer(context) }
+    var nowPlayingTitle by remember { mutableStateOf("") }
+    androidx.compose.runtime.DisposableEffect(appPlayer) {
+        val listener = object : androidx.media3.common.Player.Listener {
+            override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
+                nowPlayingTitle = appPlayer.player.currentSongTitle()
+            }
+
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                nowPlayingTitle = appPlayer.player.currentSongTitle()
+            }
+        }
+        appPlayer.player.addListener(listener)
+        onDispose {
+            appPlayer.player.removeListener(listener)
+            appPlayer.release()
+        }
+    }
 
     LaunchedEffect(Unit) {
         settings = store.load()
@@ -120,8 +143,24 @@ fun LeesApp() {
             if (cached == null || cached.isEmpty()) libraryMessage = it.message ?: "曲库读取失败"
         }
         val saved = mixStore.load()
-        daily = if (saved.isNotEmpty()) mapDaily(current, saved) else loadDaily(current, mixStore, libraryHttp)
+        val today = todayStamp()
+        daily = if (saved != null && dailyMixIsCurrent(saved.day, today) && saved.songs.isNotEmpty()) {
+            mapDaily(current, saved.songs)
+        } else {
+            loadDaily(current, mixStore, libraryHttp)
+        }
         refreshingDaily = false
+        while (true) {
+            kotlinx.coroutines.delay(millisUntilNextMidnight())
+            daily = loadDaily(current, mixStore, libraryHttp)
+        }
+    }
+
+    fun playDaily(index: Int) {
+        val current = settings ?: return
+        if (daily.isEmpty()) return
+        appPlayer.play(SubsonicServer(current.url, current.username, current.password), daily, index)
+        nowPlayingTitle = daily[index].title
     }
 
     fun refreshDaily() {
@@ -180,6 +219,16 @@ fun LeesApp() {
                 refreshingDaily = refreshingDaily,
                 onOpenDaily = { nav.navigate(Routes.Daily) },
                 onRefreshDaily = { refreshDaily() },
+                nowPlayingTitle = nowPlayingTitle,
+                onTogglePlay = {
+                    if (appPlayer.player.mediaItemCount == 0) {
+                        playDaily(0)
+                    } else if (appPlayer.player.isPlaying) {
+                        appPlayer.player.pause()
+                    } else {
+                        appPlayer.player.play()
+                    }
+                },
                 onSearch = { query ->
                     val current = settings
                     if (current == null || query.isBlank() || current.kind != ServerKind.Navidrome) {
@@ -201,7 +250,12 @@ fun LeesApp() {
             )
         }
         composable(Routes.Daily) {
-            DailyPlaylistScreen(songs = daily, http = libraryHttp, onBack = { nav.popBackStack() })
+            DailyPlaylistScreen(
+                songs = daily,
+                http = libraryHttp,
+                onBack = { nav.popBackStack() },
+                onPlay = { index -> playDaily(index) },
+            )
         }
         composable(Routes.Player) {
             PlayerScreen(

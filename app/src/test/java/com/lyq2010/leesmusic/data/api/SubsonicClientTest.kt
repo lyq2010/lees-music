@@ -58,7 +58,7 @@ class SubsonicClientTest {
         )
         server.start()
         try {
-            val albums = SubsonicClient().newestAlbums(server.config())
+            val albums = SubsonicClient().albums(server.config(), "newest")
             assertEquals("夜航", albums.single().name)
             assertEquals("newest", server.takeRequest().requestUrl!!.queryParameter("type"))
         } finally {

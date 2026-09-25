@@ -27,6 +27,8 @@ class SubsonicClient(
         call(server, "search3", mapOf("query" to query, "songCount" to "20", "albumCount" to "12", "artistCount" to "12"))
             .searchResult3 ?: SearchResult()
 
+    fun streamUrl(server: SubsonicServer, songId: String): String = authenticatedUrl(server, "stream", mapOf("id" to songId, "format" to "raw"))
+
     fun coverArtUrl(server: SubsonicServer, coverArtId: String): String {
         val salt = SubsonicAuth.salt()
         return server.baseUrl.trimEnd('/').toHttpUrl().newBuilder()
@@ -39,6 +41,20 @@ class SubsonicClient(
             .addQueryParameter("c", "Lee's Music")
             .addQueryParameter("size", "300")
             .also { }
+            .build()
+            .toString()
+    }
+
+    private fun authenticatedUrl(server: SubsonicServer, view: String, extra: Map<String, String>): String {
+        val salt = SubsonicAuth.salt()
+        return server.baseUrl.trimEnd('/').toHttpUrl().newBuilder()
+            .addPathSegments("rest/$view.view")
+            .addQueryParameter("u", server.username)
+            .addQueryParameter("t", SubsonicAuth.token(server.password, salt))
+            .addQueryParameter("s", salt)
+            .addQueryParameter("v", "1.16.1")
+            .addQueryParameter("c", "Lee's Music")
+            .apply { extra.forEach { (key, value) -> addQueryParameter(key, value) } }
             .build()
             .toString()
     }

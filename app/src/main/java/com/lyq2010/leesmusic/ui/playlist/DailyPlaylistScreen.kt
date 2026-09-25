@@ -1,6 +1,7 @@
 package com.lyq2010.leesmusic.ui.playlist
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,6 +34,7 @@ fun DailyPlaylistScreen(
     songs: List<LibrarySong>,
     http: OkHttpClient,
     onBack: () -> Unit,
+    onPlay: (Int) -> Unit,
 ) {
     Column(
         Modifier
@@ -47,7 +49,10 @@ fun DailyPlaylistScreen(
         Text("每日推荐", color = ShellText, fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
         Text("${songs.size} 首歌曲", color = ShellMuted, modifier = Modifier.padding(bottom = 12.dp))
         songs.forEachIndexed { index, song ->
-            Row(Modifier.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.clickable { onPlay(index) }.padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text("${index + 1}", color = ShellMuted, modifier = Modifier.padding(end = 10.dp))
                 RemoteCover(song.coverArtId, song.coverUrl, Modifier.size(44.dp).clip(RoundedCornerShape(6.dp)), http)
                 Column(Modifier.padding(start = 10.dp)) {

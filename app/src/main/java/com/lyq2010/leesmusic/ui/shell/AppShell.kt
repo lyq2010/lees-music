@@ -51,6 +51,8 @@ fun AppShell(
     onOpenDaily: () -> Unit,
     onRefreshDaily: () -> Unit,
     onSearch: (String) -> Unit,
+    nowPlayingTitle: String,
+    onTogglePlay: () -> Unit,
     onOpenServer: () -> Unit,
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
@@ -66,10 +68,11 @@ fun AppShell(
         Row(
             Modifier
                 .fillMaxWidth()
+                .clickable(onClick = onTogglePlay)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("还没有在播放", color = ShellMuted, fontSize = 14.sp)
+            Text(nowPlayingTitle.ifBlank { "还没有在播放" }, color = ShellText, fontSize = 14.sp)
         }
         Row(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
             tabs.forEachIndexed { index, label ->
