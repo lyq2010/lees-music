@@ -42,7 +42,7 @@ Set-Location D:\Desktop\codex\lees-music
 
 ## 下一步
 
-1. **接上 Navidrome**：现在主页、播放页和歌词页用的是写死的四首示例曲，设置、随机、投屏、睡眠定时和循环只有按钮，没有功能。下一步做 Subsonic API。
+1. **登录和地址切换**：`SubsonicClient` 已能 `ping` 和 `getAlbumList2`，还没接到界面上，也还没有服务器地址和密码的保存。
 
 后续顺序：API 客户端 → 内外网地址切换 → 防断连播放管线 → 浏览界面 → 播放服务 → ReplayGain → 歌词 → scrobble/收藏/评分 → 连接日志 → 真机验收。
 
@@ -89,6 +89,10 @@ Set-Location D:\Desktop\codex\lees-music
 - `GRADLE_USER_HOME=D:\DevCache\gradle`，`TEMP=D:\DevCache\Temp`。
 - Hypervisor 正在运行，`WinHvPlatform.dll` 存在，模拟器应该能用硬件加速；准确的启用状态需要管理员权限才能查，还没确认。
 - 测试手机：三星 Galaxy S25。USB 调试尚未连接过。
+- 模拟器：MuMu 模拟器 6.6.4，装在 `D:\Program Files (x86)\Netease\MuMuPlayer`。
+  - 它自带的 adb 是 `nx_main\adb.exe`，模拟器起来后执行 `adb connect 127.0.0.1:16384`。
+  - 2026-09-26 实测：架构 x86_64，调试包能安装，`MainActivity` 能到前台。
+  - `adb devices` 会同时出现 `127.0.0.1:16384` 和 `emulator-5554`，安装时用 `-s 127.0.0.1:16384` 指定一台。
 
 ## 注意事项
 
