@@ -104,7 +104,15 @@ private fun EndpointFields(
     onPath: (String) -> Unit,
     onHttps: (Boolean) -> Unit,
 ) {
-    Field("主机地址", host, onHost)
+    OutlinedTextField(
+        value = host,
+        onValueChange = { onHost(it.removePrefix("https://").removePrefix("http://").substringBefore("/")) },
+        label = { Text("主机地址") },
+        prefix = { Text(if (https) "https://" else "http://") },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+    )
     Row {
         Field("端口", port, onPort, Modifier.weight(1f))
         Field("路径", path, onPath, Modifier.weight(1f).padding(start = 8.dp))
