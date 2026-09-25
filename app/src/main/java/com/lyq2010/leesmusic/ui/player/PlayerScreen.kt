@@ -1,5 +1,6 @@
 package com.lyq2010.leesmusic.ui.player
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -71,7 +72,8 @@ fun PlayerScreen(
             Modifier
                 .padding(top = 8.dp, start = 28.dp, end = 28.dp)
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp)),
+                .clip(RoundedCornerShape(16.dp))
+                .border(1.dp, Peach.copy(alpha = 0.35f), RoundedCornerShape(16.dp)),
         )
         Row(
             Modifier
