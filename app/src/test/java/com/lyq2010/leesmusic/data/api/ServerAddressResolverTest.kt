@@ -22,6 +22,12 @@ class ServerAddressResolverTest {
     }
 
     @Test
+    fun allowsBlankWanWhenLanWorks() {
+        val resolved = resolver(lanOk = true).resolve("http://192.168.1.2:4533", "", "lee", "secret")
+        assertTrue(resolved.usingLan)
+    }
+
+    @Test
     fun rejectsWanThatIsNotHttps() {
         assertThrows(IllegalArgumentException::class.java) {
             resolver(lanOk = false).resolve("", "http://music.example", "lee", "secret")
