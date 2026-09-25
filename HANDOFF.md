@@ -60,10 +60,10 @@ Set-Location D:\Desktop\codex\lees-music
 - **服务端**：Navidrome、Emby、Plex。登录页可以选择这三种，选择会存进 DataStore。
   - Navidrome 走 Subsonic / OpenSubsonic API，认证用 token + salt，因为 Navidrome 还不支持 `apiKeyAuthentication`。启动时调用 `getOpenSubsonicExtensions` 探测服务端能力。
   - Emby 和 Plex 的接口还没写。选了它们只能保存地址，不能播放。
-- **内外网双地址**：先用约 1.5 秒超时探测内网的 `ping.view`，失败再回退到外网 HTTPS。不读 Wi-Fi SSID，因此不需要定位权限。
-  - 登录页已做好。密码用 Android Keystore 的 AES-GCM 加密后放进 DataStore。
-  - 内网允许明文 HTTP（`network_security_config`）。外网地址不是 `https://` 会直接拒绝。
-  - 还不会在网络变化时自动重探。
+- **服务器地址**：一台服务器只保存一个地址（主机、端口、路径、是否 HTTPS）。不再分内网和外网。
+  - 密码用 Android Keystore 的 AES-GCM 加密后放进 DataStore。
+  - 允许明文 HTTP（`network_security_config`），HTTPS 由配置页的开关决定。
+  - 旧数据如果只有 `lan_url` 或 `wan_url`，读取时会当成这一个地址。保存后改存 `url`。
 - **防断连（核心）**
   - 整首歌以原始格式（`format=raw`）预取进 `SimpleCache`，同时预取下一首；
   - 中断后用 `Range` 续传，收到 416 就从头重下，不跳歌；

@@ -1,5 +1,6 @@
 package com.lyq2010.leesmusic.ui.login
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,7 +18,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,12 +54,54 @@ fun AddServerScreen(onBack: () -> Unit, onPick: (ServerKind) -> Unit) {
                         color = ShellCard,
                         shape = RoundedCornerShape(16.dp),
                     ) {
-                        Text(kind.name, color = ShellText, modifier = Modifier.padding(22.dp), fontSize = 16.sp)
+                        Column(
+                            Modifier.fillMaxWidth().padding(22.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            ServerMark(kind)
+                            Text(kind.name, color = ShellText, modifier = Modifier.padding(top = 10.dp), fontSize = 16.sp)
+                        }
                     }
                 }
                 if (row.size == 1) {
                     Spacer(Modifier.weight(1f))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ServerMark(kind: ServerKind) {
+    val color = when (kind) {
+        ServerKind.Navidrome -> Color(0xFF4C8DFF)
+        ServerKind.Emby -> Color(0xFF52B54B)
+        ServerKind.Plex -> Color(0xFFE5A00D)
+    }
+    Canvas(Modifier.size(42.dp)) {
+        drawCircle(color)
+        when (kind) {
+            ServerKind.Navidrome -> {
+                drawCircle(Color.White, radius = size.minDimension * 0.28f, style = Stroke(width = 3.dp.toPx()))
+                drawCircle(Color.White, radius = size.minDimension * 0.08f)
+            }
+            ServerKind.Emby -> {
+                val path = Path().apply {
+                    moveTo(size.width * 0.38f, size.height * 0.28f)
+                    lineTo(size.width * 0.72f, size.height * 0.5f)
+                    lineTo(size.width * 0.38f, size.height * 0.72f)
+                    close()
+                }
+                drawPath(path, Color.White)
+            }
+            ServerKind.Plex -> {
+                val path = Path().apply {
+                    moveTo(size.width * 0.5f, size.height * 0.22f)
+                    lineTo(size.width * 0.78f, size.height * 0.72f)
+                    lineTo(size.width * 0.22f, size.height * 0.72f)
+                    close()
+                }
+                drawPath(path, Color.White)
             }
         }
     }

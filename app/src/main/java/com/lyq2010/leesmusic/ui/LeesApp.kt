@@ -80,8 +80,8 @@ fun LeesApp() {
                         runCatching {
                             SubsonicClient(probeClient).ping(SubsonicServer(baseUrl, username, password))
                         }.isSuccess
-                    }.resolve(next.lanUrl, next.wanUrl, next.username, next.password)
-                    if (resolved.usingLan) "正在使用内网 ${resolved.baseUrl}" else "内网没有响应，正在使用外网 ${resolved.baseUrl}"
+                    }.resolve(next.url, next.username, next.password)
+                    "已连接 $resolved"
                 }.getOrElse { it.message ?: "连接失败" }
             }
             settings = next

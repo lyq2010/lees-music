@@ -47,16 +47,11 @@ fun LoginScreen(
     onBack: () -> Unit,
     onSave: (ServerSettings) -> Unit,
 ) {
-    val lanInitial = parseEndpoint(initial?.lanUrl.orEmpty(), httpsDefault = false)
-    val wanInitial = parseEndpoint(initial?.wanUrl.orEmpty(), httpsDefault = true)
-    var lanHost by rememberSaveable { mutableStateOf(lanInitial.host) }
-    var lanPort by rememberSaveable { mutableStateOf(lanInitial.port) }
-    var lanPath by rememberSaveable { mutableStateOf(lanInitial.path) }
-    var lanHttps by rememberSaveable { mutableStateOf(lanInitial.https) }
-    var wanHost by rememberSaveable { mutableStateOf(wanInitial.host) }
-    var wanPort by rememberSaveable { mutableStateOf(wanInitial.port) }
-    var wanPath by rememberSaveable { mutableStateOf(wanInitial.path) }
-    var wanHttps by rememberSaveable { mutableStateOf(wanInitial.https) }
+    val saved = parseEndpoint(initial?.url.orEmpty(), httpsDefault = false)
+    var host by rememberSaveable { mutableStateOf(saved.host) }
+    var port by rememberSaveable { mutableStateOf(saved.port) }
+    var path by rememberSaveable { mutableStateOf(saved.path) }
+    var https by rememberSaveable { mutableStateOf(saved.https) }
     var username by rememberSaveable { mutableStateOf(initial?.username.orEmpty()) }
     var password by rememberSaveable { mutableStateOf(initial?.password.orEmpty()) }
     Column(
@@ -76,22 +71,19 @@ fun LoginScreen(
                     onSave(
                         ServerSettings(
                             kind = kind,
-                            lanUrl = ServerEndpoint(lanHost, lanPort, lanPath, lanHttps).toUrl(),
-                            wanUrl = ServerEndpoint(wanHost, wanPort, wanPath, wanHttps).toUrl(),
+                            url = ServerEndpoint(host, port, path, https).toUrl(),
                             username = username,
                             password = password,
                         ),
                     )
                 },
-                enabled = !busy && username.isNotBlank() && password.isNotBlank() && (lanHost.isNotBlank() || wanHost.isNotBlank()),
+                enabled = !busy && username.isNotBlank() && password.isNotBlank() && host.isNotBlank(),
             ) {
                 Icon(Icons.Filled.Check, contentDescription = if (busy) "正在连接" else "保存", tint = ShellText)
             }
         }
-        Text("内网", color = ShellMuted, modifier = Modifier.padding(top = 8.dp))
-        EndpointFields(lanHost, lanPort, lanPath, lanHttps, { lanHost = it }, { lanPort = it }, { lanPath = it }, { lanHttps = it })
-        Text("外网", color = ShellMuted, modifier = Modifier.padding(top = 16.dp))
-        EndpointFields(wanHost, wanPort, wanPath, wanHttps, { wanHost = it }, { wanPort = it }, { wanPath = it }, { wanHttps = it })
+        Text("连接设置", color = ShellMuted, modifier = Modifier.padding(top = 8.dp))
+        EndpointFields(host, port, path, https, { host = it }, { port = it }, { path = it }, { https = it })
         Text("登录信息", color = ShellMuted, modifier = Modifier.padding(top = 16.dp))
         Field("用户名", username, { username = it })
         Field("密码", password, { password = it }, password = true)

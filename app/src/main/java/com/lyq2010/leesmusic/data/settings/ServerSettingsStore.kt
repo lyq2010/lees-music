@@ -22,8 +22,7 @@ enum class ServerKind {
 
 data class ServerSettings(
     val kind: ServerKind = ServerKind.Navidrome,
-    val lanUrl: String,
-    val wanUrl: String,
+    val url: String,
     val username: String,
     val password: String,
 )
@@ -32,6 +31,7 @@ private val Context.serverSettingsDataStore by preferencesDataStore(name = "serv
 
 class ServerSettingsStore(private val context: Context) {
     private val kindKey = stringPreferencesKey("kind")
+    private val urlKey = stringPreferencesKey("url")
     private val lanKey = stringPreferencesKey("lan_url")
     private val wanKey = stringPreferencesKey("wan_url")
     private val userKey = stringPreferencesKey("username")
@@ -44,8 +44,7 @@ class ServerSettingsStore(private val context: Context) {
         val kind = prefs[kindKey]?.let { runCatching { ServerKind.valueOf(it) }.getOrNull() } ?: ServerKind.Navidrome
         return ServerSettings(
             kind = kind,
-            lanUrl = prefs[lanKey].orEmpty(),
-            wanUrl = prefs[wanKey].orEmpty(),
+            url = prefs[urlKey] ?: prefs[lanKey] ?: prefs[wanKey].orEmpty(),
             username = username,
             password = password,
         )
@@ -54,8 +53,9 @@ class ServerSettingsStore(private val context: Context) {
     suspend fun save(settings: ServerSettings) {
         context.serverSettingsDataStore.edit { prefs ->
             prefs[kindKey] = settings.kind.name
-            prefs[lanKey] = settings.lanUrl.trim()
-            prefs[wanKey] = settings.wanUrl.trim()
+            prefs[urlKey] = settings.url.trim()
+            prefs.remove(lanKey)
+            prefs.remove(wanKey)
             prefs[userKey] = settings.username.trim()
             prefs[passwordKey] = PasswordCipher.encrypt(settings.password)
         }

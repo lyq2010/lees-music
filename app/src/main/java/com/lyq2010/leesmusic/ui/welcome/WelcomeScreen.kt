@@ -50,7 +50,7 @@ fun WelcomeScreen(onAddServer: () -> Unit) {
         Surface(Modifier.fillMaxWidth().padding(top = 28.dp), color = ShellCard, shape = RoundedCornerShape(20.dp)) {
             Column(Modifier.padding(20.dp)) {
                 Text("三台服务器", color = ShellText, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-                Text("Navidrome、Emby、Plex。在家走内网，出门走外网", color = ShellMuted, modifier = Modifier.padding(top = 6.dp))
+                Text("Navidrome、Emby、Plex，填一个服务器地址", color = ShellMuted, modifier = Modifier.padding(top = 6.dp))
             }
         }
         Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
