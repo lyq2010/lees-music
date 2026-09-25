@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,9 +30,16 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Slider
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.material3.Text
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -107,50 +115,67 @@ fun PlayerScreen(
                 Icon(Icons.Filled.MoreVert, contentDescription = "更多", tint = Peach)
             }
         }
-        Slider(
-            value = positionMs.coerceAtLeast(0L).toFloat(),
-            onValueChange = { onSeek(it.toLong()) },
-            valueRange = 0f..durationMs.coerceAtLeast(1L).toFloat(),
-            modifier = Modifier.padding(top = 12.dp),
+        ThinSeek(
+            fraction = if (durationMs > 0) (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f) else 0f,
+            onChange = { fraction -> if (durationMs > 0) onSeek((fraction * durationMs).toLong()) },
+            modifier = Modifier.padding(top = 20.dp),
         )
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(formatTime((positionMs / 1000).toInt()), color = Peach, fontSize = 12.sp)
-            Text(formatTime((durationMs / 1000).toInt()), color = Peach, fontSize = 12.sp)
+            Text(formatTime(if (durationMs > 0) (durationMs / 1000).toInt() else 0), color = Peach, fontSize = 12.sp)
+        }
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TransportSlot { Icon(Icons.Filled.Shuffle, contentDescription = "随机播放", tint = Peach) }
+            TransportSlot {
+                IconButton(onClick = onPrevious) {
+                    Icon(Icons.Filled.SkipPrevious, contentDescription = "上一首", tint = Peach)
+                }
+            }
+            TransportSlot {
+                Box(
+                    Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(Peach)
+                        .clickable(onClick = onPlayPause),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isPlaying) "暂停" else "播放",
+                        tint = ink,
+                        modifier = Modifier.size(32.dp),
+                    )
+                }
+            }
+            TransportSlot {
+                IconButton(onClick = onNext) {
+                    Icon(Icons.Filled.SkipNext, contentDescription = "下一首", tint = Peach)
+                }
+            }
+            TransportSlot {
+                IconButton(onClick = onOpenLyrics) {
+                    Icon(Icons.Filled.MusicNote, contentDescription = "歌词", tint = Peach)
+                }
+            }
         }
         Row(
             Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(Icons.Filled.Shuffle, contentDescription = "随机播放", tint = Peach)
-            IconButton(onClick = onPrevious) {
-                Icon(Icons.Filled.SkipPrevious, contentDescription = "上一首", tint = Peach, modifier = Modifier.size(36.dp))
-            }
-            IconButton(onClick = onPlayPause) {
-                Icon(
-                    if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (isPlaying) "暂停" else "播放",
-                    tint = ink,
-                    modifier = Modifier.size(64.dp).background(Peach, androidx.compose.foundation.shape.CircleShape).padding(12.dp),
-                )
-            }
-            IconButton(onClick = onNext) {
-                Icon(Icons.Filled.SkipNext, contentDescription = "下一首", tint = Peach, modifier = Modifier.size(36.dp))
-            }
-            IconButton(onClick = onOpenLyrics) {
-                Icon(Icons.Filled.MusicNote, contentDescription = "歌词", tint = Peach)
-            }
-        }
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(Icons.AutoMirrored.Filled.VolumeDown, contentDescription = null, tint = Peach)
-            Slider(value = volume, onValueChange = { volume = it; onVolume(it) }, modifier = Modifier.weight(1f))
+            ThinSeek(
+                fraction = volume,
+                onChange = { volume = it; onVolume(it) },
+                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+            )
             Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "音量", tint = Peach)
         }
         Spacer(Modifier.weight(1f))
@@ -167,6 +192,55 @@ fun PlayerScreen(
             Icon(Icons.Filled.Schedule, contentDescription = "睡眠定时", tint = Peach, modifier = Modifier.padding(12.dp))
             Icon(Icons.Filled.Repeat, contentDescription = "循环", tint = Peach, modifier = Modifier.padding(12.dp))
         }
+    }
+}
+
+@Composable
+private fun RowScope.TransportSlot(content: @Composable () -> Unit) {
+    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+        content()
+    }
+}
+
+@Composable
+private fun ThinSeek(fraction: Float, onChange: (Float) -> Unit, modifier: Modifier = Modifier) {
+    var width by remember { mutableStateOf(1) }
+    var dragging by remember { mutableStateOf<Float?>(null) }
+    val shown = dragging ?: fraction
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(28.dp)
+            .onSizeChanged { width = it.width.coerceAtLeast(1) }
+            .pointerInput(width) {
+                detectHorizontalDragGestures(
+                    onDragStart = { start -> dragging = (start.x / width).coerceIn(0f, 1f) },
+                    onHorizontalDrag = { change, _ ->
+                        dragging = (change.position.x / width).coerceIn(0f, 1f)
+                    },
+                    onDragEnd = {
+                        dragging?.let(onChange)
+                        dragging = null
+                    },
+                    onDragCancel = { dragging = null },
+                )
+            },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .clip(CircleShape)
+                .background(Peach.copy(alpha = 0.25f)),
+        )
+        Box(
+            Modifier
+                .fillMaxWidth(shown.coerceIn(0f, 1f))
+                .height(4.dp)
+                .clip(CircleShape)
+                .background(Peach),
+        )
     }
 }
 

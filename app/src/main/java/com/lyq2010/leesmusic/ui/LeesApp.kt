@@ -101,8 +101,8 @@ fun LeesApp() {
             override fun onIsPlayingChanged(playing: Boolean) {
                 isPlaying = playing
                 nowPlayingTitle = appPlayer.player.currentSongTitle()
-                positionMs = appPlayer.player.currentPosition
-                durationMs = appPlayer.player.duration.coerceAtLeast(0L)
+                positionMs = appPlayer.player.currentPosition.coerceAtLeast(0L)
+                if (appPlayer.player.duration > 0) durationMs = appPlayer.player.duration
             }
         }
         appPlayer.player.addListener(listener)
