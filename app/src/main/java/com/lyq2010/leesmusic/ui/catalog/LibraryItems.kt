@@ -14,4 +14,8 @@ data class LibrarySong(
     val artist: String,
     val coverArtId: String?,
     val coverUrl: String?,
+    val duration: Int = 0,
+    val track: Int = 0,
+    val suffix: String = "",
+    val bitRate: Int = 0,
 )

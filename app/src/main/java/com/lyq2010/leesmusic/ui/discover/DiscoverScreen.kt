@@ -2,7 +2,9 @@ package com.lyq2010.leesmusic.ui.discover
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +42,7 @@ fun DiscoverScreen(
     daily: List<LibrarySong>,
     refreshing: Boolean,
     onOpenDaily: () -> Unit,
+    onPlayDaily: () -> Unit,
     onRefreshDaily: () -> Unit,
     newest: List<LibraryAlbum>,
     recent: List<LibraryAlbum>,
@@ -55,7 +59,7 @@ fun DiscoverScreen(
             .padding(20.dp),
     ) {
         Text("发现", color = ShellText, fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
-        DailyCard(daily, refreshing, onOpenDaily, onRefreshDaily, http)
+        DailyCard(daily, refreshing, onOpenDaily, onPlayDaily, onRefreshDaily, http)
         if (message.isNotEmpty()) {
             Text(message, color = ShellMuted, modifier = Modifier.padding(top = 8.dp))
         }
@@ -94,25 +98,31 @@ private fun DailyCard(
     songs: List<LibrarySong>,
     refreshing: Boolean,
     onOpen: () -> Unit,
+    onPlay: () -> Unit,
     onRefresh: () -> Unit,
     http: OkHttpClient,
 ) {
     val cover = songs.firstOrNull()
-    Surface(
-        onClick = onOpen,
-        modifier = Modifier.padding(top = 16.dp).fillMaxWidth(),
-        color = ShellCard,
-        shape = RoundedCornerShape(16.dp),
+    Box(
+        Modifier
+            .padding(top = 16.dp)
+            .fillMaxWidth()
+            .height(190.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .clickable(onClick = onOpen),
     ) {
-        Row(Modifier.padding(12.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-            RemoteCover(cover?.coverArtId, cover?.coverUrl, Modifier.size(72.dp).clip(RoundedCornerShape(8.dp)), http)
-            Column(Modifier.padding(start = 12.dp).weight(1f)) {
-                Text("每日推荐", color = ShellText, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                Text(if (songs.isEmpty()) "点刷新生成 50 首" else "50 首歌曲", color = ShellMuted)
-            }
-            IconButton(onClick = onRefresh, enabled = !refreshing) {
-                Icon(Icons.Filled.Refresh, contentDescription = if (refreshing) "正在更新" else "刷新每日推荐", tint = ShellText)
-            }
+        RemoteCover(cover?.coverArtId, cover?.coverUrl, Modifier.matchParentSize(), http)
+        Box(Modifier.matchParentSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.38f)))
+        Column(Modifier.align(androidx.compose.ui.Alignment.BottomStart).padding(16.dp)) {
+            Text("每日推荐", color = ShellText, fontSize = 13.sp)
+            Text(cover?.title ?: "正在准备", color = ShellText, fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text(if (refreshing) "正在更新" else "50 首歌曲    查看全部  >", color = ShellText, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
+        }
+        IconButton(onClick = onRefresh, modifier = Modifier.align(androidx.compose.ui.Alignment.TopStart), enabled = !refreshing) {
+            Icon(Icons.Filled.Refresh, contentDescription = "刷新每日推荐", tint = ShellText)
+        }
+        IconButton(onClick = onPlay, modifier = Modifier.align(androidx.compose.ui.Alignment.TopEnd)) {
+            Icon(Icons.Filled.PlayArrow, contentDescription = "打开播放页", tint = ShellText)
         }
     }
 }

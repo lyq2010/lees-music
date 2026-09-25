@@ -83,6 +83,10 @@ fun LeesApp() {
     var searchResults by remember { mutableStateOf<List<String>>(emptyList()) }
     var daily by remember { mutableStateOf<List<com.lyq2010.leesmusic.ui.catalog.LibrarySong>>(emptyList()) }
     var openedTitle by remember { mutableStateOf("") }
+    var openedArtist by remember { mutableStateOf("") }
+    var openedYear by remember { mutableStateOf(0) }
+    var openedCoverId by remember { mutableStateOf<String?>(null) }
+    var openedCoverUrl by remember { mutableStateOf<String?>(null) }
     var openedSongs by remember { mutableStateOf<List<com.lyq2010.leesmusic.ui.catalog.LibrarySong>>(emptyList()) }
     var refreshingDaily by remember { mutableStateOf(false) }
     val appPlayer = remember { AppPlayer(context) }
@@ -175,13 +179,20 @@ fun LeesApp() {
         }
     }
 
-    fun playSongs(songs: List<com.lyq2010.leesmusic.ui.catalog.LibrarySong>, index: Int) {
+    fun playSongs(
+        songs: List<com.lyq2010.leesmusic.ui.catalog.LibrarySong>,
+        index: Int,
+        start: Boolean = false,
+        openPlayer: Boolean = true,
+    ) {
         val current = settings ?: return
         if (songs.isEmpty()) return
-        appPlayer.play(SubsonicServer(current.url, current.username, current.password), songs, index)
-        currentSong = songs[index]
-        nowPlayingTitle = songs[index].title
-        nav.navigate(Routes.Player)
+        val safeIndex = index.coerceIn(0, songs.lastIndex)
+        appPlayer.play(SubsonicServer(current.url, current.username, current.password), songs, safeIndex, start)
+        currentSong = songs[safeIndex]
+        nowPlayingTitle = songs[safeIndex].title
+        isPlaying = start
+        if (openPlayer) nav.navigate(Routes.Player)
     }
 
     fun openAlbum(album: com.lyq2010.leesmusic.ui.catalog.LibraryAlbum) {
@@ -191,18 +202,27 @@ fun LeesApp() {
                 runCatching {
                     val client = SubsonicClient(libraryHttp)
                     val server = SubsonicServer(current.url, current.username, current.password)
-                    client.album(server, album.id).song.map { song ->
+                    val loaded = client.album(server, album.id)
+                    openedTitle = loaded.name.ifBlank { album.name }
+                    openedArtist = loaded.artist.ifBlank { album.artist }
+                    openedYear = loaded.year
+                    openedCoverId = loaded.coverArt ?: album.coverArtId
+                    openedCoverUrl = openedCoverId?.let { client.coverArtUrl(server, it) }
+                    loaded.song.map { song ->
                         com.lyq2010.leesmusic.ui.catalog.LibrarySong(
                             id = song.id,
                             title = song.title,
                             artist = song.artist,
-                            coverArtId = song.coverArt ?: album.coverArtId,
-                            coverUrl = (song.coverArt ?: album.coverArtId)?.let { client.coverArtUrl(server, it) },
+                            coverArtId = song.coverArt ?: openedCoverId,
+                            coverUrl = (song.coverArt ?: openedCoverId)?.let { client.coverArtUrl(server, it) },
+                            duration = song.duration,
+                            track = song.track,
+                            suffix = song.suffix,
+                            bitRate = song.bitRate,
                         )
                     }
                 }.getOrDefault(emptyList())
             }
-            openedTitle = album.name
             openedSongs = songs
             if (songs.isNotEmpty()) nav.navigate(Routes.Album)
         }
@@ -263,7 +283,9 @@ fun LeesApp() {
                 daily = daily,
                 refreshingDaily = refreshingDaily,
                 onOpenDaily = { nav.navigate(Routes.Daily) },
+                onPlayDaily = { if (daily.isNotEmpty()) playSongs(daily, 0) },
                 onRefreshDaily = { refreshDaily() },
+                showPlayerBar = currentSong != null,
                 nowPlayingTitle = nowPlayingTitle,
                 nowPlayingArtist = currentSong?.artist.orEmpty(),
                 nowPlayingCoverId = currentSong?.coverArtId,
@@ -309,12 +331,18 @@ fun LeesApp() {
             )
         }
         composable(Routes.Album) {
-            DailyPlaylistScreen(
+            com.lyq2010.leesmusic.ui.album.AlbumScreen(
+                title = openedTitle,
+                artist = openedArtist,
+                year = openedYear,
+                coverArtId = openedCoverId,
+                coverUrl = openedCoverUrl,
                 songs = openedSongs,
                 http = libraryHttp,
                 onBack = { nav.popBackStack() },
+                onPlayInOrder = { playSongs(openedSongs, 0, start = true, openPlayer = false) },
+                onShuffle = { playSongs(openedSongs.shuffled(), 0, start = true, openPlayer = false) },
                 onPlay = { index -> playSongs(openedSongs, index) },
-                title = openedTitle,
             )
         }
         composable(Routes.Player) {

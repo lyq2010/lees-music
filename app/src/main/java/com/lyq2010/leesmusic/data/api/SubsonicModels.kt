@@ -36,6 +36,8 @@ data class Album(
     val name: String,
     val artist: String = "",
     val coverArt: String? = null,
+    val year: Int = 0,
+    val songCount: Int = 0,
     val song: List<Song> = emptyList(),
 )
 
@@ -59,6 +61,9 @@ data class Song(
     val album: String = "",
     val coverArt: String? = null,
     val duration: Int = 0,
+    val track: Int = 0,
+    val suffix: String = "",
+    val bitRate: Int = 0,
 )
 
 @Serializable

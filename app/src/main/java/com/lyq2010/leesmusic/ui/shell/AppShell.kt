@@ -54,8 +54,10 @@ fun AppShell(
     daily: List<com.lyq2010.leesmusic.ui.catalog.LibrarySong>,
     refreshingDaily: Boolean,
     onOpenDaily: () -> Unit,
+    onPlayDaily: () -> Unit,
     onRefreshDaily: () -> Unit,
     onSearch: (String) -> Unit,
+    showPlayerBar: Boolean,
     nowPlayingTitle: String,
     nowPlayingArtist: String,
     nowPlayingCoverId: String?,
@@ -71,12 +73,12 @@ fun AppShell(
         Column(Modifier.weight(1f)) {
             when (tab) {
                 0 -> LibraryScreen(serverLabel, newest, libraryMessage, http, onOpenAlbum)
-                1 -> DiscoverScreen(daily, refreshingDaily, onOpenDaily, onRefreshDaily, newest, recent, frequent, randomAlbums, http, libraryMessage, onOpenAlbum)
+                1 -> DiscoverScreen(daily, refreshingDaily, onOpenDaily, onPlayDaily, onRefreshDaily, newest, recent, frequent, randomAlbums, http, libraryMessage, onOpenAlbum)
                 2 -> SearchScreen(searchResults, onSearch)
                 else -> SettingsScreen(onOpenServer)
             }
         }
-        Surface(color = ShellCard, modifier = Modifier.fillMaxWidth()) {
+        if (showPlayerBar) Surface(color = ShellCard, modifier = Modifier.fillMaxWidth()) {
             Row(
                 Modifier
                     .fillMaxWidth()
