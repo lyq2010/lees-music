@@ -17,7 +17,10 @@ import com.lyq2010.leesmusic.data.api.ServerAddressResolver
 import com.lyq2010.leesmusic.data.api.SubsonicClient
 import com.lyq2010.leesmusic.data.api.Song
 import com.lyq2010.leesmusic.data.api.SubsonicServer
+import com.lyq2010.leesmusic.data.api.Album
 import com.lyq2010.leesmusic.data.library.DailyMixStore
+import com.lyq2010.leesmusic.data.library.LibraryShelf
+import com.lyq2010.leesmusic.data.library.LibraryShelfStore
 import com.lyq2010.leesmusic.data.settings.ServerKind
 import com.lyq2010.leesmusic.data.settings.ServerSettings
 import com.lyq2010.leesmusic.data.settings.ServerSettingsStore
@@ -50,6 +53,7 @@ fun LeesApp() {
     val context = LocalContext.current
     val store = remember { ServerSettingsStore(context) }
     val mixStore = remember { DailyMixStore(context) }
+    val shelfStore = remember { LibraryShelfStore(context) }
     val probeClient = remember {
         OkHttpClient.Builder()
             .connectTimeout(1500, TimeUnit.MILLISECONDS)
@@ -81,29 +85,40 @@ fun LeesApp() {
     LaunchedEffect(settings) {
         val current = settings
         if (current == null || current.kind != ServerKind.Navidrome) return@LaunchedEffect
-        libraryMessage = "正在读取曲库"
+        val cached = shelfStore.load()
+        if (cached != null && !cached.isEmpty()) {
+            val shown = mapShelf(current, cached)
+            newest = shown.newest
+            recent = shown.recent
+            frequent = shown.frequent
+            randomAlbums = shown.random
+            libraryMessage = ""
+        } else {
+            libraryMessage = "正在读取曲库"
+        }
         val loaded = withContext(Dispatchers.IO) {
             runCatching {
                 val client = SubsonicClient(libraryHttp)
                 val server = SubsonicServer(current.url, current.username, current.password)
-                fun albums(type: String) = client.albums(server, type).map { album ->
-                    com.lyq2010.leesmusic.ui.catalog.LibraryAlbum(
-                        name = album.name,
-                        artist = album.artist,
-                        coverArtId = album.coverArt,
-                        coverUrl = album.coverArt?.let { client.coverArtUrl(server, it) },
-                    )
-                }
-                listOf(albums("newest"), albums("recent"), albums("frequent"), albums("random"))
+                LibraryShelf(
+                    newest = client.albums(server, "newest"),
+                    recent = client.albums(server, "recent"),
+                    frequent = client.albums(server, "frequent"),
+                    random = client.albums(server, "random"),
+                )
             }
         }
-        loaded.onSuccess { lists ->
-            newest = lists[0]
-            recent = lists[1]
-            frequent = lists[2]
-            randomAlbums = lists[3]
+        loaded.onSuccess { shelf ->
+            shelfStore.save(shelf)
+            val shown = mapShelf(current, shelf)
+            newest = shown.newest
+            recent = shown.recent
+            frequent = shown.frequent
+            randomAlbums = shown.random
             libraryMessage = ""
-        }.onFailure { libraryMessage = it.message ?: "曲库读取失败" }
+        }.onFailure {
+            if (cached == null || cached.isEmpty()) libraryMessage = it.message ?: "曲库读取失败"
+        }
         val saved = mixStore.load()
         daily = if (saved.isNotEmpty()) mapDaily(current, saved) else loadDaily(current, mixStore, libraryHttp)
         refreshingDaily = false
@@ -221,6 +236,32 @@ fun LeesApp() {
             )
         }
     }
+}
+
+private data class ShownShelf(
+    val newest: List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>,
+    val recent: List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>,
+    val frequent: List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>,
+    val random: List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>,
+)
+
+private fun mapShelf(settings: ServerSettings, shelf: LibraryShelf): ShownShelf {
+    val client = SubsonicClient()
+    val server = SubsonicServer(settings.url, settings.username, settings.password)
+    fun mapAlbums(albums: List<Album>) = albums.map { album ->
+        com.lyq2010.leesmusic.ui.catalog.LibraryAlbum(
+            name = album.name,
+            artist = album.artist,
+            coverArtId = album.coverArt,
+            coverUrl = album.coverArt?.let { client.coverArtUrl(server, it) },
+        )
+    }
+    return ShownShelf(
+        newest = mapAlbums(shelf.newest),
+        recent = mapAlbums(shelf.recent),
+        frequent = mapAlbums(shelf.frequent),
+        random = mapAlbums(shelf.random),
+    )
 }
 
 private suspend fun loadDaily(
