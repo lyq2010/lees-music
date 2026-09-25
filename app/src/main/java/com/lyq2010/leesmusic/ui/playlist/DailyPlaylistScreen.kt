@@ -35,6 +35,7 @@ fun DailyPlaylistScreen(
     http: OkHttpClient,
     onBack: () -> Unit,
     onPlay: (Int) -> Unit,
+    title: String = "每日推荐",
 ) {
     Column(
         Modifier
@@ -46,7 +47,7 @@ fun DailyPlaylistScreen(
         IconButton(onClick = onBack, modifier = Modifier.padding(top = 8.dp)) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", tint = ShellText)
         }
-        Text("每日推荐", color = ShellText, fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
+        Text(title, color = ShellText, fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
         Text("${songs.size} 首歌曲", color = ShellMuted, modifier = Modifier.padding(bottom = 12.dp))
         songs.forEachIndexed { index, song ->
             Row(

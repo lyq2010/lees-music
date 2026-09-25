@@ -51,6 +51,7 @@ private object Routes {
     const val AddServer = "add-server"
     const val Welcome = "welcome"
     const val Daily = "daily"
+    const val Album = "album"
 }
 
 @Composable
@@ -81,6 +82,8 @@ fun LeesApp() {
     var libraryMessage by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<String>>(emptyList()) }
     var daily by remember { mutableStateOf<List<com.lyq2010.leesmusic.ui.catalog.LibrarySong>>(emptyList()) }
+    var openedTitle by remember { mutableStateOf("") }
+    var openedSongs by remember { mutableStateOf<List<com.lyq2010.leesmusic.ui.catalog.LibrarySong>>(emptyList()) }
     var refreshingDaily by remember { mutableStateOf(false) }
     val appPlayer = remember { AppPlayer(context) }
     var nowPlayingTitle by remember { mutableStateOf("") }
@@ -156,11 +159,35 @@ fun LeesApp() {
         }
     }
 
-    fun playDaily(index: Int) {
+    fun playSongs(songs: List<com.lyq2010.leesmusic.ui.catalog.LibrarySong>, index: Int) {
         val current = settings ?: return
-        if (daily.isEmpty()) return
-        appPlayer.play(SubsonicServer(current.url, current.username, current.password), daily, index)
-        nowPlayingTitle = daily[index].title
+        if (songs.isEmpty()) return
+        appPlayer.play(SubsonicServer(current.url, current.username, current.password), songs, index)
+        nowPlayingTitle = songs[index].title
+    }
+
+    fun openAlbum(album: com.lyq2010.leesmusic.ui.catalog.LibraryAlbum) {
+        val current = settings ?: return
+        scope.launch {
+            val songs = withContext(Dispatchers.IO) {
+                runCatching {
+                    val client = SubsonicClient(libraryHttp)
+                    val server = SubsonicServer(current.url, current.username, current.password)
+                    client.album(server, album.id).song.map { song ->
+                        com.lyq2010.leesmusic.ui.catalog.LibrarySong(
+                            id = song.id,
+                            title = song.title,
+                            artist = song.artist,
+                            coverArtId = song.coverArt ?: album.coverArtId,
+                            coverUrl = (song.coverArt ?: album.coverArtId)?.let { client.coverArtUrl(server, it) },
+                        )
+                    }
+                }.getOrDefault(emptyList())
+            }
+            openedTitle = album.name
+            openedSongs = songs
+            if (songs.isNotEmpty()) nav.navigate(Routes.Album)
+        }
     }
 
     fun refreshDaily() {
@@ -220,9 +247,10 @@ fun LeesApp() {
                 onOpenDaily = { nav.navigate(Routes.Daily) },
                 onRefreshDaily = { refreshDaily() },
                 nowPlayingTitle = nowPlayingTitle,
+                onOpenAlbum = { album -> openAlbum(album) },
                 onTogglePlay = {
                     if (appPlayer.player.mediaItemCount == 0) {
-                        playDaily(0)
+                        playSongs(daily, 0)
                     } else if (appPlayer.player.isPlaying) {
                         appPlayer.player.pause()
                     } else {
@@ -254,7 +282,16 @@ fun LeesApp() {
                 songs = daily,
                 http = libraryHttp,
                 onBack = { nav.popBackStack() },
-                onPlay = { index -> playDaily(index) },
+                onPlay = { index -> playSongs(daily, index) },
+            )
+        }
+        composable(Routes.Album) {
+            DailyPlaylistScreen(
+                songs = openedSongs,
+                http = libraryHttp,
+                onBack = { nav.popBackStack() },
+                onPlay = { index -> playSongs(openedSongs, index) },
+                title = openedTitle,
             )
         }
         composable(Routes.Player) {
@@ -304,6 +341,7 @@ private fun mapShelf(settings: ServerSettings, shelf: LibraryShelf): ShownShelf 
     val server = SubsonicServer(settings.url, settings.username, settings.password)
     fun mapAlbums(albums: List<Album>) = albums.map { album ->
         com.lyq2010.leesmusic.ui.catalog.LibraryAlbum(
+            id = album.id,
             name = album.name,
             artist = album.artist,
             coverArtId = album.coverArt,

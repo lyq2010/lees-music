@@ -16,6 +16,7 @@ data class SubsonicBody(
     val albumList2: AlbumList? = null,
     val searchResult3: SearchResult? = null,
     val randomSongs: SongList? = null,
+    val album: Album? = null,
 )
 
 @Serializable
@@ -35,6 +36,7 @@ data class Album(
     val name: String,
     val artist: String = "",
     val coverArt: String? = null,
+    val song: List<Song> = emptyList(),
 )
 
 @Serializable

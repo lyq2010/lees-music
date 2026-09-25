@@ -41,6 +41,7 @@ fun LibraryScreen(
     newest: List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>,
     message: String,
     http: okhttp3.OkHttpClient,
+    onOpenAlbum: (com.lyq2010.leesmusic.ui.catalog.LibraryAlbum) -> Unit,
 ) {
     var playlistTab by rememberSaveable { mutableIntStateOf(0) }
     Column(
@@ -69,7 +70,10 @@ fun LibraryScreen(
             Text("还没有专辑", color = ShellMuted)
         } else {
             newest.take(8).forEach { album ->
-                Row(Modifier.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    Modifier.clickable { onOpenAlbum(album) }.padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     com.lyq2010.leesmusic.ui.catalog.RemoteCover(
                         album.coverArtId,
                         album.coverUrl,

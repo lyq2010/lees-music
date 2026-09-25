@@ -17,6 +17,9 @@ class SubsonicClient(
 ) {
     fun ping(server: SubsonicServer): SubsonicBody = call(server, "ping")
 
+    fun album(server: SubsonicServer, id: String): Album =
+        call(server, "getAlbum", mapOf("id" to id)).album ?: Album(id = id, name = "")
+
     fun albums(server: SubsonicServer, type: String): List<Album> =
         call(server, "getAlbumList2", mapOf("type" to type, "size" to "20")).albumList2?.album.orEmpty()
 

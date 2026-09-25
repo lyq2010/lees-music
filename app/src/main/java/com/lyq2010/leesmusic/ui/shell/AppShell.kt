@@ -53,14 +53,15 @@ fun AppShell(
     onSearch: (String) -> Unit,
     nowPlayingTitle: String,
     onTogglePlay: () -> Unit,
+    onOpenAlbum: (com.lyq2010.leesmusic.ui.catalog.LibraryAlbum) -> Unit,
     onOpenServer: () -> Unit,
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     Column(Modifier.fillMaxSize().background(ShellBg)) {
         Column(Modifier.weight(1f)) {
             when (tab) {
-                0 -> LibraryScreen(serverLabel, newest, libraryMessage, http)
-                1 -> DiscoverScreen(daily, refreshingDaily, onOpenDaily, onRefreshDaily, newest, recent, frequent, randomAlbums, http, libraryMessage)
+                0 -> LibraryScreen(serverLabel, newest, libraryMessage, http, onOpenAlbum)
+                1 -> DiscoverScreen(daily, refreshingDaily, onOpenDaily, onRefreshDaily, newest, recent, frequent, randomAlbums, http, libraryMessage, onOpenAlbum)
                 2 -> SearchScreen(searchResults, onSearch)
                 else -> SettingsScreen(onOpenServer)
             }

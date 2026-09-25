@@ -46,6 +46,7 @@ fun DiscoverScreen(
     random: List<LibraryAlbum>,
     http: OkHttpClient,
     message: String,
+    onOpenAlbum: (LibraryAlbum) -> Unit,
 ) {
     Column(
         Modifier
@@ -58,15 +59,20 @@ fun DiscoverScreen(
         if (message.isNotEmpty()) {
             Text(message, color = ShellMuted, modifier = Modifier.padding(top = 8.dp))
         }
-        AlbumRow("最近添加", newest, http)
-        AlbumRow("最近播放", recent, http)
-        AlbumRow("最常播放", frequent, http)
-        AlbumRow("随机推荐", random, http)
+        AlbumRow("最近添加", newest, http, onOpenAlbum)
+        AlbumRow("最近播放", recent, http, onOpenAlbum)
+        AlbumRow("最常播放", frequent, http, onOpenAlbum)
+        AlbumRow("随机推荐", random, http, onOpenAlbum)
     }
 }
 
 @Composable
-private fun AlbumRow(title: String, albums: List<LibraryAlbum>, http: OkHttpClient) {
+private fun AlbumRow(
+    title: String,
+    albums: List<LibraryAlbum>,
+    http: OkHttpClient,
+    onOpenAlbum: (LibraryAlbum) -> Unit,
+) {
     Text(title, color = ShellText, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 22.dp, bottom = 10.dp))
     if (albums.isEmpty()) {
         Text("还没有", color = ShellMuted)
@@ -74,7 +80,7 @@ private fun AlbumRow(title: String, albums: List<LibraryAlbum>, http: OkHttpClie
     }
     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         albums.forEach { album ->
-            Column(Modifier.width(110.dp)) {
+            Column(Modifier.width(110.dp).clickable { onOpenAlbum(album) }) {
                 RemoteCover(album.coverArtId, album.coverUrl, Modifier.size(110.dp).clip(RoundedCornerShape(8.dp)), http)
                 Text(album.name, color = ShellText, fontSize = 13.sp, maxLines = 1, modifier = Modifier.padding(top = 6.dp))
                 Text(album.artist, color = ShellMuted, fontSize = 12.sp, maxLines = 1)
