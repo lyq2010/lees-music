@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import com.lyq2010.leesmusic.data.api.ServerAddressResolver
 import com.lyq2010.leesmusic.data.api.SubsonicClient
 import com.lyq2010.leesmusic.data.api.SubsonicServer
+import com.lyq2010.leesmusic.data.settings.ServerKind
 import com.lyq2010.leesmusic.data.settings.ServerSettings
 import com.lyq2010.leesmusic.data.settings.ServerSettingsStore
 import com.lyq2010.leesmusic.ui.catalog.SampleCatalog
@@ -23,6 +24,7 @@ import com.lyq2010.leesmusic.ui.home.HomeScreen
 import com.lyq2010.leesmusic.ui.login.LoginScreen
 import com.lyq2010.leesmusic.ui.lyrics.LyricsScreen
 import com.lyq2010.leesmusic.ui.player.PlayerScreen
+import com.lyq2010.leesmusic.ui.welcome.WelcomeScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -34,6 +36,7 @@ private object Routes {
     const val Player = "player"
     const val Lyrics = "lyrics"
     const val Login = "login"
+    const val Welcome = "welcome"
 }
 
 @Composable
@@ -67,6 +70,9 @@ fun LeesApp() {
             status = withContext(Dispatchers.IO) {
                 runCatching {
                     store.save(next)
+                    if (next.kind != ServerKind.Navidrome) {
+                        return@runCatching "${next.kind.name} 的地址已保存。这个服务器的接口还没接上，现在还不能播放。"
+                    }
                     val resolved = ServerAddressResolver { baseUrl, username, password ->
                         runCatching {
                             SubsonicClient(probeClient).ping(SubsonicServer(baseUrl, username, password))
@@ -82,7 +88,7 @@ fun LeesApp() {
 
     NavHost(
         navController = nav,
-        startDestination = if (settings == null) Routes.Login else Routes.Home,
+        startDestination = if (settings == null) Routes.Welcome else Routes.Home,
         modifier = Modifier.fillMaxSize(),
     ) {
         composable(Routes.Home) {
@@ -101,6 +107,9 @@ fun LeesApp() {
         }
         composable(Routes.Lyrics) {
             LyricsScreen(track = track, onBack = { nav.popBackStack() })
+        }
+        composable(Routes.Welcome) {
+            WelcomeScreen(onAddServer = { nav.navigate(Routes.Login) })
         }
         composable(Routes.Login) {
             LoginScreen(

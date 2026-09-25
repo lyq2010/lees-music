@@ -14,7 +14,14 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
+enum class ServerKind {
+    Navidrome,
+    Emby,
+    Plex,
+}
+
 data class ServerSettings(
+    val kind: ServerKind = ServerKind.Navidrome,
     val lanUrl: String,
     val wanUrl: String,
     val username: String,
@@ -24,6 +31,7 @@ data class ServerSettings(
 private val Context.serverSettingsDataStore by preferencesDataStore(name = "server_settings")
 
 class ServerSettingsStore(private val context: Context) {
+    private val kindKey = stringPreferencesKey("kind")
     private val lanKey = stringPreferencesKey("lan_url")
     private val wanKey = stringPreferencesKey("wan_url")
     private val userKey = stringPreferencesKey("username")
@@ -33,7 +41,9 @@ class ServerSettingsStore(private val context: Context) {
         val prefs = context.serverSettingsDataStore.data.first()
         val username = prefs[userKey] ?: return null
         val password = prefs[passwordKey]?.let(PasswordCipher::decrypt) ?: return null
+        val kind = prefs[kindKey]?.let { runCatching { ServerKind.valueOf(it) }.getOrNull() } ?: ServerKind.Navidrome
         return ServerSettings(
+            kind = kind,
             lanUrl = prefs[lanKey].orEmpty(),
             wanUrl = prefs[wanKey].orEmpty(),
             username = username,
@@ -43,6 +53,7 @@ class ServerSettingsStore(private val context: Context) {
 
     suspend fun save(settings: ServerSettings) {
         context.serverSettingsDataStore.edit { prefs ->
+            prefs[kindKey] = settings.kind.name
             prefs[lanKey] = settings.lanUrl.trim()
             prefs[wanKey] = settings.wanUrl.trim()
             prefs[userKey] = settings.username.trim()
