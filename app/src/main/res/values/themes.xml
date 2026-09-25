@@ -1,0 +1,3 @@
+<resources>
+    <style name="Theme.LeesMusic" parent="android:Theme.Material.NoActionBar" />
+</resources>
