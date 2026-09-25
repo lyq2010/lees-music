@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mark must stay inside the 66dp safe-zone circle centered on the 108dp canvas.
+     Draw order matters: the butt-capped played segment covers the cached segment's round start cap. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:translateX="-2"
+        android:translateY="1.5">
+        <path
+            android:pathData="M56,66 Q59.5,58 63,66 T70,66"
+            android:strokeWidth="7"
+            android:strokeColor="#FF8A65"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M42,66 Q45.5,58 49,66 T56,66"
+            android:strokeWidth="7"
+            android:strokeColor="#FFD6B8"
+            android:strokeLineCap="butt" />
+        <path
+            android:pathData="M34,36 L34,66 L42,66"
+            android:strokeWidth="9"
+            android:strokeColor="#FFD6B8"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:fillColor="#FF8A65"
+            android:pathData="M80,66 m-3.5,0 a3.5,3.5 0,1 1,7 0 a3.5,3.5 0,1 1,-7 0" />
+    </group>
+</vector>
