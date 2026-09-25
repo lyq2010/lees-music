@@ -1,29 +1,21 @@
 package com.lyq2010.leesmusic.playback
 
-import android.content.ComponentName
 import android.content.Context
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
-import androidx.media3.session.MediaController
-import androidx.media3.session.SessionToken
+import androidx.media3.exoplayer.ExoPlayer
 import com.lyq2010.leesmusic.data.api.SubsonicClient
 import com.lyq2010.leesmusic.data.api.SubsonicServer
 import com.lyq2010.leesmusic.ui.catalog.LibrarySong
 
 class AppPlayer(context: Context) {
-    private val future = MediaController.Builder(
-        context,
-        SessionToken(context, ComponentName(context, PlaybackService::class.java)),
-    ).buildAsync()
-
-    val player: Player get() = future.get()
-
+    val player: ExoPlayer = ExoPlayer.Builder(context).setWakeMode(C.WAKE_MODE_NETWORK).build()
     var songs: List<LibrarySong> = emptyList()
         private set
 
     fun play(server: SubsonicServer, songs: List<LibrarySong>, index: Int, start: Boolean = false) {
-        val player = this.player
         if (songs.isEmpty()) return
         this.songs = songs
         val client = SubsonicClient()
@@ -40,7 +32,7 @@ class AppPlayer(context: Context) {
     }
 
     fun release() {
-        MediaController.releaseFuture(future)
+        player.release()
     }
 }
 
