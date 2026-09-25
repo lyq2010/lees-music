@@ -328,6 +328,8 @@ fun LeesApp() {
                 http = libraryHttp,
                 onBack = { nav.popBackStack() },
                 onPlay = { index -> playSongs(daily, index) },
+                onPlayInOrder = { playSongs(daily, 0, start = true, openPlayer = false) },
+                onShuffle = { playSongs(daily.shuffled(), 0, start = true, openPlayer = false) },
             )
         }
         composable(Routes.Album) {
