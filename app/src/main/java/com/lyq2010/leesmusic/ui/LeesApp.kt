@@ -20,10 +20,11 @@ import com.lyq2010.leesmusic.data.settings.ServerKind
 import com.lyq2010.leesmusic.data.settings.ServerSettings
 import com.lyq2010.leesmusic.data.settings.ServerSettingsStore
 import com.lyq2010.leesmusic.ui.catalog.SampleCatalog
-import com.lyq2010.leesmusic.ui.home.HomeScreen
+import com.lyq2010.leesmusic.ui.login.AddServerScreen
 import com.lyq2010.leesmusic.ui.login.LoginScreen
 import com.lyq2010.leesmusic.ui.lyrics.LyricsScreen
 import com.lyq2010.leesmusic.ui.player.PlayerScreen
+import com.lyq2010.leesmusic.ui.shell.AppShell
 import com.lyq2010.leesmusic.ui.welcome.WelcomeScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -36,6 +37,7 @@ private object Routes {
     const val Player = "player"
     const val Lyrics = "lyrics"
     const val Login = "login"
+    const val AddServer = "add-server"
     const val Welcome = "welcome"
 }
 
@@ -54,6 +56,7 @@ fun LeesApp() {
     val scope = rememberCoroutineScope()
     var ready by remember { mutableStateOf(false) }
     var settings by remember { mutableStateOf<ServerSettings?>(null) }
+    var pendingKind by remember { mutableStateOf(ServerKind.Navidrome) }
     var status by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     val track = SampleCatalog.nowPlaying
@@ -83,6 +86,9 @@ fun LeesApp() {
             }
             settings = next
             busy = false
+            nav.navigate(Routes.Home) {
+                popUpTo(Routes.Welcome) { inclusive = true }
+            }
         }
     }
 
@@ -92,10 +98,14 @@ fun LeesApp() {
         modifier = Modifier.fillMaxSize(),
     ) {
         composable(Routes.Home) {
-            HomeScreen(
+            AppShell(
                 nowPlaying = track,
+                serverLabel = settings?.kind?.name ?: "未连接",
                 onOpenPlayer = { nav.navigate(Routes.Player) },
-                onOpenSettings = { nav.navigate(Routes.Login) },
+                onOpenServer = {
+                    pendingKind = settings?.kind ?: ServerKind.Navidrome
+                    nav.navigate(Routes.Login)
+                },
             )
         }
         composable(Routes.Player) {
@@ -109,13 +119,24 @@ fun LeesApp() {
             LyricsScreen(track = track, onBack = { nav.popBackStack() })
         }
         composable(Routes.Welcome) {
-            WelcomeScreen(onAddServer = { nav.navigate(Routes.Login) })
+            WelcomeScreen(onAddServer = { nav.navigate(Routes.AddServer) })
+        }
+        composable(Routes.AddServer) {
+            AddServerScreen(
+                onBack = { nav.popBackStack() },
+                onPick = { kind ->
+                    pendingKind = kind
+                    nav.navigate(Routes.Login)
+                },
+            )
         }
         composable(Routes.Login) {
             LoginScreen(
+                kind = pendingKind,
                 initial = settings,
                 status = status,
                 busy = busy,
+                onBack = { nav.popBackStack() },
                 onSave = ::connect,
             )
         }
