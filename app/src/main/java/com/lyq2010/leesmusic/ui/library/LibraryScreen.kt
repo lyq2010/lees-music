@@ -1,6 +1,8 @@
 package com.lyq2010.leesmusic.ui.library
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,7 +36,12 @@ import com.lyq2010.leesmusic.ui.shell.ShellMuted
 import com.lyq2010.leesmusic.ui.shell.ShellText
 
 @Composable
-fun LibraryScreen(serverLabel: String) {
+fun LibraryScreen(
+    serverLabel: String,
+    newest: List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>,
+    message: String,
+    http: okhttp3.OkHttpClient,
+) {
     var playlistTab by rememberSaveable { mutableIntStateOf(0) }
     Column(
         Modifier
@@ -43,7 +50,12 @@ fun LibraryScreen(serverLabel: String) {
             .padding(20.dp),
     ) {
         Text("音乐库", color = ShellText, fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
-        Text(serverLabel, color = ShellMuted, modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
+        Text(serverLabel, color = ShellMuted, modifier = Modifier.padding(top = 4.dp))
+        if (message.isNotEmpty()) {
+            Text(message, color = ShellMuted, modifier = Modifier.padding(top = 6.dp, bottom = 10.dp))
+        } else {
+            Text("", modifier = Modifier.padding(bottom = 16.dp))
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             LibraryTile(Icons.Filled.MusicNote, "歌曲", Modifier.weight(1f))
             LibraryTile(Icons.Filled.Album, "专辑", Modifier.weight(1f))
@@ -51,6 +63,24 @@ fun LibraryScreen(serverLabel: String) {
         Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             LibraryTile(Icons.Filled.Person, "艺术家", Modifier.weight(1f))
             LibraryTile(Icons.Filled.Download, "下载", Modifier.weight(1f))
+        }
+        Text("最近添加", color = ShellText, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 22.dp, bottom = 10.dp))
+        if (newest.isEmpty()) {
+            Text("还没有专辑", color = ShellMuted)
+        } else {
+            newest.take(8).forEach { album ->
+                Row(Modifier.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    com.lyq2010.leesmusic.ui.catalog.RemoteCover(
+                        album.coverUrl,
+                        Modifier.size(48.dp).clip(RoundedCornerShape(6.dp)),
+                        http,
+                    )
+                    Column(Modifier.padding(start = 10.dp)) {
+                        Text(album.name, color = ShellText)
+                        Text(album.artist, color = ShellMuted, fontSize = 12.sp)
+                    }
+                }
+            }
         }
         Row(Modifier.padding(top = 28.dp), verticalAlignment = Alignment.CenterVertically) {
             listOf("我的歌单", "共享歌单").forEachIndexed { index, label ->

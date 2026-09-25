@@ -1,6 +1,6 @@
 package com.lyq2010.leesmusic.ui.discover
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,20 +13,26 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lyq2010.leesmusic.ui.catalog.AlbumCover
-import com.lyq2010.leesmusic.ui.catalog.SampleCatalog
-import com.lyq2010.leesmusic.ui.catalog.Track
+import com.lyq2010.leesmusic.ui.catalog.LibraryAlbum
+import com.lyq2010.leesmusic.ui.catalog.RemoteCover
 import com.lyq2010.leesmusic.ui.shell.ShellMuted
 import com.lyq2010.leesmusic.ui.shell.ShellText
+import okhttp3.OkHttpClient
 
 @Composable
-fun DiscoverScreen(onOpenPlayer: () -> Unit) {
+fun DiscoverScreen(
+    newest: List<LibraryAlbum>,
+    recent: List<LibraryAlbum>,
+    frequent: List<LibraryAlbum>,
+    random: List<LibraryAlbum>,
+    http: OkHttpClient,
+    message: String,
+) {
     Column(
         Modifier
             .fillMaxSize()
@@ -34,65 +40,30 @@ fun DiscoverScreen(onOpenPlayer: () -> Unit) {
             .padding(20.dp),
     ) {
         Text("发现", color = ShellText, fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
-        Text("每日推荐", color = ShellMuted, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
-        AlbumCover(
-            SampleCatalog.nowPlaying.cover,
-            Modifier
-                .size(160.dp)
-                .clip(RoundedCornerShape(12.dp)),
-        )
-        Section("最近添加") {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SampleCatalog.tracks.forEach { track ->
-                    CoverTitle(track, Modifier.width(96.dp))
-                }
-            }
+        if (message.isNotEmpty()) {
+            Text(message, color = ShellMuted, modifier = Modifier.padding(top = 8.dp))
         }
-        Section("最近播放") {
-            SampleCatalog.tracks.take(3).forEach { track ->
-                SongRow(track, onOpenPlayer)
-            }
-        }
-        Section("最常播放") {
-            SampleCatalog.tracks.take(3).forEach { track ->
-                SongRow(track, onOpenPlayer)
-            }
-        }
-        Section("随机推荐") {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SampleCatalog.tracks.take(2).forEach { track ->
-                    CoverTitle(track, Modifier.width(96.dp))
-                }
-            }
-        }
+        AlbumRow("最近添加", newest, http)
+        AlbumRow("最近播放", recent, http)
+        AlbumRow("最常播放", frequent, http)
+        AlbumRow("随机推荐", random, http)
     }
 }
 
 @Composable
-private fun Section(title: String, content: @Composable () -> Unit) {
+private fun AlbumRow(title: String, albums: List<LibraryAlbum>, http: OkHttpClient) {
     Text(title, color = ShellText, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 22.dp, bottom = 10.dp))
-    content()
-}
-
-@Composable
-private fun CoverTitle(track: Track, modifier: Modifier) {
-    Column(modifier) {
-        AlbumCover(track.cover, Modifier.clip(RoundedCornerShape(8.dp)))
-        Text(track.title, color = ShellText, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
-        Text(track.artist, color = ShellMuted, fontSize = 12.sp)
+    if (albums.isEmpty()) {
+        Text("还没有", color = ShellMuted)
+        return
     }
-}
-
-@Composable
-private fun SongRow(track: Track, onClick: () -> Unit) {
-    Row(
-        Modifier.clickable(onClick = onClick).padding(vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        AlbumCover(track.cover, Modifier.size(44.dp).clip(RoundedCornerShape(6.dp)))
-        Column(Modifier.padding(start = 10.dp)) {
-            Text(track.title, color = ShellText)
-            Text(track.artist, color = ShellMuted, fontSize = 12.sp)
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        albums.forEach { album ->
+            Column(Modifier.width(110.dp)) {
+                RemoteCover(album.coverUrl, Modifier.size(110.dp).clip(RoundedCornerShape(8.dp)), http)
+                Text(album.name, color = ShellText, fontSize = 13.sp, maxLines = 1, modifier = Modifier.padding(top = 6.dp))
+                Text(album.artist, color = ShellMuted, fontSize = 12.sp, maxLines = 1)
+            }
         }
     }
 }

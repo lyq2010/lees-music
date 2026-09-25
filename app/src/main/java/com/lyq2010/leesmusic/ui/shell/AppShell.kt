@@ -38,34 +38,34 @@ private val tabs = listOf("首页", "发现", "搜索", "设置")
 
 @Composable
 fun AppShell(
-    nowPlaying: Track,
     serverLabel: String,
-    onOpenPlayer: () -> Unit,
+    newest: List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>,
+    recent: List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>,
+    frequent: List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>,
+    randomAlbums: List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>,
+    searchResults: List<String>,
+    libraryMessage: String,
+    http: okhttp3.OkHttpClient,
+    onSearch: (String) -> Unit,
     onOpenServer: () -> Unit,
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     Column(Modifier.fillMaxSize().background(ShellBg)) {
         Column(Modifier.weight(1f)) {
             when (tab) {
-                0 -> LibraryScreen(serverLabel)
-                1 -> DiscoverScreen(onOpenPlayer)
-                2 -> SearchScreen()
+                0 -> LibraryScreen(serverLabel, newest, libraryMessage, http)
+                1 -> DiscoverScreen(newest, recent, frequent, randomAlbums, http, libraryMessage)
+                2 -> SearchScreen(searchResults, onSearch)
                 else -> SettingsScreen(onOpenServer)
             }
         }
         Row(
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onOpenPlayer)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            AlbumCover(nowPlaying.cover, Modifier.size(42.dp).clip(RoundedCornerShape(6.dp)))
-            Column(Modifier.padding(start = 10.dp).weight(1f)) {
-                Text(nowPlaying.title, color = ShellText, fontSize = 15.sp)
-                Text("${nowPlaying.artist} · ${nowPlaying.album}", color = ShellMuted, fontSize = 12.sp, maxLines = 1)
-            }
-            Icon(Icons.Filled.MusicNote, contentDescription = "歌词", tint = ShellMuted)
+            Text("还没有在播放", color = ShellMuted, fontSize = 14.sp)
         }
         Row(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
             tabs.forEachIndexed { index, label ->

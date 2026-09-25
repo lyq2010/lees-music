@@ -17,8 +17,27 @@ class SubsonicClient(
 ) {
     fun ping(server: SubsonicServer): SubsonicBody = call(server, "ping")
 
-    fun newestAlbums(server: SubsonicServer): List<Album> =
-        call(server, "getAlbumList2", mapOf("type" to "newest", "size" to "20")).albumList2?.album.orEmpty()
+    fun albums(server: SubsonicServer, type: String): List<Album> =
+        call(server, "getAlbumList2", mapOf("type" to type, "size" to "20")).albumList2?.album.orEmpty()
+
+    fun search(server: SubsonicServer, query: String): SearchResult =
+        call(server, "search3", mapOf("query" to query, "songCount" to "20", "albumCount" to "12", "artistCount" to "12"))
+            .searchResult3 ?: SearchResult()
+
+    fun coverArtUrl(server: SubsonicServer, coverArtId: String): String {
+        val salt = SubsonicAuth.salt()
+        return server.baseUrl.trimEnd('/').toHttpUrl().newBuilder()
+            .addPathSegments("rest/getCoverArt.view")
+            .addQueryParameter("id", coverArtId)
+            .addQueryParameter("u", server.username)
+            .addQueryParameter("t", SubsonicAuth.token(server.password, salt))
+            .addQueryParameter("s", salt)
+            .addQueryParameter("v", "1.16.1")
+            .addQueryParameter("c", "Lee's Music")
+            .addQueryParameter("size", "300")
+            .build()
+            .toString()
+    }
 
     private fun call(server: SubsonicServer, view: String, extra: Map<String, String> = emptyMap()): SubsonicBody {
         val salt = SubsonicAuth.salt()

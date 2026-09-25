@@ -14,6 +14,7 @@ data class SubsonicBody(
     val version: String,
     val error: SubsonicError? = null,
     val albumList2: AlbumList? = null,
+    val searchResult3: SearchResult? = null,
 )
 
 @Serializable
@@ -33,6 +34,28 @@ data class Album(
     val name: String,
     val artist: String = "",
     val coverArt: String? = null,
+)
+
+@Serializable
+data class SearchResult(
+    val song: List<Song> = emptyList(),
+    val album: List<Album> = emptyList(),
+    val artist: List<Artist> = emptyList(),
+)
+
+@Serializable
+data class Song(
+    val id: String,
+    val title: String,
+    val artist: String = "",
+    val album: String = "",
+    val coverArt: String? = null,
+)
+
+@Serializable
+data class Artist(
+    val id: String,
+    val name: String,
 )
 
 class SubsonicException(val code: Int, message: String) : Exception(message)

@@ -11,7 +11,19 @@ data class ServerEndpoint(
 
 fun ServerEndpoint.toUrl(): String {
     if (host.isBlank()) return ""
-    val scheme = if (https) "https" else "http"
+    var rawHost = host.trim()
+    var useHttps = https
+    when {
+        rawHost.startsWith("https://") -> {
+            useHttps = true
+            rawHost = rawHost.removePrefix("https://")
+        }
+        rawHost.startsWith("http://") -> {
+            rawHost = rawHost.removePrefix("http://")
+        }
+    }
+    rawHost = rawHost.substringBefore("/")
+    val scheme = if (useHttps) "https" else "http"
     val portPart = port.trim().let { if (it.isEmpty()) "" else ":$it" }
     val pathPart = path.trim().let { raw ->
         when {
@@ -20,12 +32,15 @@ fun ServerEndpoint.toUrl(): String {
             else -> "/${raw.trimEnd('/')}"
         }
     }
-    return "$scheme://${host.trim()}$portPart$pathPart"
+    return "$scheme://$rawHost$portPart$pathPart"
 }
+
+fun normalizeServerUrl(url: String): String =
+    url.trim().replace(Regex("^(https?)://https?://"), "$1://")
 
 fun parseEndpoint(url: String, httpsDefault: Boolean): ServerEndpoint {
     if (url.isBlank()) return ServerEndpoint(https = httpsDefault)
-    val uri = URI(url)
+    val uri = URI(normalizeServerUrl(url))
     val port = if (uri.port == -1) "" else uri.port.toString()
     return ServerEndpoint(
         host = uri.host.orEmpty(),

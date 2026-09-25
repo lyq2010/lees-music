@@ -14,6 +14,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -33,8 +34,9 @@ import com.lyq2010.leesmusic.ui.shell.ShellText
 private val kinds = listOf("歌曲", "专辑", "艺术家")
 
 @Composable
-fun SearchScreen() {
+fun SearchScreen(results: List<String>, onQuery: (String) -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
+    LaunchedEffect(query) { onQuery(query) }
     var kind by rememberSaveable { mutableIntStateOf(0) }
     Column(Modifier.fillMaxSize().padding(20.dp)) {
         Text("搜索", color = ShellText, fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
@@ -61,6 +63,9 @@ fun SearchScreen() {
                     )
                 }
             }
+        }
+        results.forEach { line ->
+            Text(line, color = ShellText, modifier = Modifier.padding(top = 10.dp))
         }
         if (query.isBlank()) {
             Column(Modifier.fillMaxWidth().padding(top = 80.dp), horizontalAlignment = Alignment.CenterHorizontally) {

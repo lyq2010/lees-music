@@ -44,7 +44,7 @@ class ServerSettingsStore(private val context: Context) {
         val kind = prefs[kindKey]?.let { runCatching { ServerKind.valueOf(it) }.getOrNull() } ?: ServerKind.Navidrome
         return ServerSettings(
             kind = kind,
-            url = prefs[urlKey] ?: prefs[lanKey] ?: prefs[wanKey].orEmpty(),
+            url = normalizeServerUrl(prefs[urlKey] ?: prefs[lanKey] ?: prefs[wanKey].orEmpty()),
             username = username,
             password = password,
         )

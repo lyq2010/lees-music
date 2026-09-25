@@ -59,11 +59,43 @@ fun LeesApp() {
     var pendingKind by remember { mutableStateOf(ServerKind.Navidrome) }
     var status by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
-    val track = SampleCatalog.nowPlaying
+    val libraryHttp = remember { OkHttpClient() }
+    var newest by remember { mutableStateOf<List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>>(emptyList()) }
+    var recent by remember { mutableStateOf<List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>>(emptyList()) }
+    var frequent by remember { mutableStateOf<List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>>(emptyList()) }
+    var randomAlbums by remember { mutableStateOf<List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>>(emptyList()) }
+    var libraryMessage by remember { mutableStateOf("") }
+    var searchResults by remember { mutableStateOf<List<String>>(emptyList()) }
 
     LaunchedEffect(Unit) {
         settings = store.load()
         ready = true
+    }
+    LaunchedEffect(settings) {
+        val current = settings
+        if (current == null || current.kind != ServerKind.Navidrome) return@LaunchedEffect
+        libraryMessage = "正在读取曲库"
+        val loaded = withContext(Dispatchers.IO) {
+            runCatching {
+                val client = SubsonicClient(libraryHttp)
+                val server = SubsonicServer(current.url, current.username, current.password)
+                fun albums(type: String) = client.albums(server, type).map { album ->
+                    com.lyq2010.leesmusic.ui.catalog.LibraryAlbum(
+                        name = album.name,
+                        artist = album.artist,
+                        coverUrl = album.coverArt?.let { client.coverArtUrl(server, it) },
+                    )
+                }
+                listOf(albums("newest"), albums("recent"), albums("frequent"), albums("random"))
+            }
+        }
+        loaded.onSuccess { lists ->
+            newest = lists[0]
+            recent = lists[1]
+            frequent = lists[2]
+            randomAlbums = lists[3]
+            libraryMessage = ""
+        }.onFailure { libraryMessage = it.message ?: "曲库读取失败" }
     }
     if (!ready) return
 
@@ -86,8 +118,10 @@ fun LeesApp() {
             }
             settings = next
             busy = false
-            nav.navigate(Routes.Home) {
-                popUpTo(Routes.Welcome) { inclusive = true }
+            if (status.startsWith("已连接")) {
+                nav.navigate(Routes.Home) {
+                    popUpTo(Routes.Welcome) { inclusive = true }
+                }
             }
         }
     }
@@ -99,9 +133,28 @@ fun LeesApp() {
     ) {
         composable(Routes.Home) {
             AppShell(
-                nowPlaying = track,
                 serverLabel = settings?.kind?.name ?: "未连接",
-                onOpenPlayer = { nav.navigate(Routes.Player) },
+                newest = newest,
+                recent = recent,
+                frequent = frequent,
+                randomAlbums = randomAlbums,
+                searchResults = searchResults,
+                libraryMessage = libraryMessage,
+                http = libraryHttp,
+                onSearch = { query ->
+                    val current = settings
+                    if (current == null || query.isBlank() || current.kind != ServerKind.Navidrome) {
+                        searchResults = emptyList()
+                    } else scope.launch {
+                        searchResults = withContext(Dispatchers.IO) {
+                            runCatching {
+                                val server = SubsonicServer(current.url, current.username, current.password)
+                                val found = SubsonicClient(libraryHttp).search(server, query)
+                                found.song.map { it.title + " · " + it.artist } + found.album.map { it.name + " · " + it.artist }
+                            }.getOrElse { listOf(it.message ?: "搜索失败") }
+                        }
+                    }
+                },
                 onOpenServer = {
                     pendingKind = settings?.kind ?: ServerKind.Navidrome
                     nav.navigate(Routes.Login)
@@ -110,13 +163,13 @@ fun LeesApp() {
         }
         composable(Routes.Player) {
             PlayerScreen(
-                track = track,
+                track = SampleCatalog.nowPlaying,
                 onBack = { nav.popBackStack() },
                 onOpenLyrics = { nav.navigate(Routes.Lyrics) },
             )
         }
         composable(Routes.Lyrics) {
-            LyricsScreen(track = track, onBack = { nav.popBackStack() })
+            LyricsScreen(track = SampleCatalog.nowPlaying, onBack = { nav.popBackStack() })
         }
         composable(Routes.Welcome) {
             WelcomeScreen(onAddServer = { nav.navigate(Routes.AddServer) })
