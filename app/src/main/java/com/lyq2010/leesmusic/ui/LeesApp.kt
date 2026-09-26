@@ -11,10 +11,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
 import com.lyq2010.leesmusic.data.api.ServerAddressResolver
 import com.lyq2010.leesmusic.data.api.SubsonicClient
@@ -48,7 +51,6 @@ import java.util.concurrent.TimeUnit
 private object Routes {
     const val Home = "home"
     const val Player = "player"
-    const val Lyrics = "lyrics"
     const val Servers = "servers"
     const val Login = "login"
     const val AddServer = "add-server"
@@ -437,8 +439,12 @@ fun LeesApp() {
                 onPlay = { index -> playSongs(openedSongs, index) },
             )
         }
-        composable(Routes.Player) {
-            PlayerScreen(
+        dialog(Routes.Player, dialogProperties = DialogProperties(
+            usePlatformDefaultWidth = false, decorFitsSystemWindows = false,
+        )) {
+            var showLyrics by rememberSaveable { mutableStateOf(false) }
+            androidx.activity.compose.BackHandler(showLyrics) { showLyrics = false }
+            if (!showLyrics) PlayerScreen(
                 song = currentSong,
                 http = libraryHttp,
                 isPlaying = playRequested,
@@ -458,15 +464,13 @@ fun LeesApp() {
                 onNext = { appPlayer.playerOrNull()?.seekToNextMediaItem() },
                 onVolume = { level -> appPlayer.playerOrNull()?.let { it.volume = level } },
                 onBack = { nav.popBackStack() },
-                onOpenLyrics = { nav.navigate(Routes.Lyrics) },
+                onOpenLyrics = { showLyrics = true },
                 shuffle = shuffle, buffering = buffering, canPrevious = canPrevious, canNext = canNext,
                 onShuffle = { appPlayer.playerOrNull()?.let { it.shuffleModeEnabled = !it.shuffleModeEnabled } },
                 onQueue = { showQueue = true }, onMore = { actionSong = currentSong },
                 sleepRemainingMs = sleepRemainingMs, onSleepTimer = { showSleepTimer = true },
             )
-        }
-        composable(Routes.Lyrics) {
-            LyricsScreen(
+            else LyricsScreen(
                 song = currentSong,
                 server = settings?.takeIf { it.kind == ServerKind.Navidrome }?.let {
                     SubsonicServer(it.url, it.username, it.password)
@@ -483,7 +487,8 @@ fun LeesApp() {
                 onPrevious = { appPlayer.playerOrNull()?.seekToPrevious() },
                 onNext = { appPlayer.playerOrNull()?.seekToNextMediaItem() },
                 onRepeat = { appPlayer.playerOrNull()?.let { it.repeatMode = com.lyq2010.leesmusic.playback.nextRepeatMode(it.repeatMode) } },
-                onBack = { nav.popBackStack() },
+                onBack = { showLyrics = false },
+                onDismiss = { nav.popBackStack() },
                 shuffle = shuffle, buffering = buffering, canPrevious = canPrevious, canNext = canNext,
                 onShuffle = { appPlayer.playerOrNull()?.let { it.shuffleModeEnabled = !it.shuffleModeEnabled } },
                 onQueue = { showQueue = true }, onMore = { actionSong = currentSong },

@@ -10,7 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Composable
-internal fun UpdateHistory() {
+internal fun UpdateHistory(releaseNotes: String? = null) {
     val context = LocalContext.current
     val history by produceState<String?>(null) {
         value = withContext(Dispatchers.IO) {
@@ -18,10 +18,10 @@ internal fun UpdateHistory() {
                 .getOrDefault("暂时无法读取更新记录")
         }
     }
-    Text("更新记录", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 28.dp, bottom = 12.dp))
+    Text("本次更新", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 28.dp, bottom = 12.dp))
     Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer) {
         Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            val text = history
+            val text = releaseNotes ?: history
             if (text == null) CircularProgressIndicator(Modifier.size(24.dp))
             else text.lineSequence().filter { it.isNotBlank() && !it.startsWith("# ") }.forEach { line ->
                 Text(line.removePrefix("## ").replaceFirst(Regex("^- "), "• "),

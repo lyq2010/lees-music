@@ -49,7 +49,6 @@ fun UpdateScreen(onBack: () -> Unit) {
         Text(message, modifier = Modifier.padding(vertical = 20.dp))
         if (busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         available?.let { update ->
-            Text(update.manifest.notes)
             Text("安装包 %.1f MB".format(update.manifest.size / 1024.0 / 1024), modifier = Modifier.padding(vertical = 12.dp))
             if (busy && progress > 0) Text("已下载 ${(progress * 100).toInt()}%")
             Button(enabled = !busy && !BuildConfig.DEBUG, onClick = {
@@ -62,12 +61,14 @@ fun UpdateScreen(onBack: () -> Unit) {
                     try {
                         val job = currentCoroutineContext()
                         withContext(Dispatchers.IO) {
-                            file.parentFile!!.mkdirs()
-                            client.download(update, file) { count, size ->
+                            UpdateCache.download(file) {
+                                client.download(update, file) { count, size ->
+                                    job.ensureActive()
+                                    progress = count.toFloat() / size
+                                }
+                                UpdateInstaller.verify(context, file, update.manifest)
                                 job.ensureActive()
-                                progress = count.toFloat() / size
                             }
-                            UpdateInstaller.verify(context, file, update.manifest)
                         }
                         downloaded = true; message = "下载完成，请点击安装"
                     } catch (cancelled: CancellationException) { throw cancelled
@@ -77,6 +78,6 @@ fun UpdateScreen(onBack: () -> Unit) {
             }) { Text(if (downloaded) "安装更新" else "下载更新") }
         }
         OutlinedButton(enabled = !busy, onClick = { check() }) { Text("检查更新") }
-        UpdateHistory()
+        UpdateHistory(available?.manifest?.notes)
     }
 }

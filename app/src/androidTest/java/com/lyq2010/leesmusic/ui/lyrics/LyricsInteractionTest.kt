@@ -18,6 +18,56 @@ class LyricsInteractionTest {
     @get:Rule val compose = createComposeRule()
     private val lyrics = StructuredLyrics(true, line = (0..30).map { LyricLine("测试歌词第 $it 行", it * 1000L) })
 
+    @Test fun lyricsHandleDismissesPlayerInsteadOfReturningToCover() {
+        var dismissed = 0
+        compose.setContent { LeesTheme {
+            LyricsScreen(song = null, server = null,
+                repository = com.lyq2010.leesmusic.data.library.LyricsRepository(
+                    com.lyq2010.leesmusic.data.api.SubsonicClient(okhttp3.OkHttpClient())),
+                positionMs = 0, durationMs = 0, isPlaying = false, volume = 1f, repeatMode = 0,
+                onSeek = {}, onPlayPause = {}, onVolume = {}, onPrevious = {}, onNext = {}, onRepeat = {},
+                onBack = { fail("downward drag should close the player") }, onDismiss = { dismissed++ })
+        } }
+        compose.onNodeWithContentDescription("收起播放页").performTouchInput {
+            swipe(center, center + androidx.compose.ui.geometry.Offset(0f, 400f), 400)
+        }
+        compose.runOnIdle { assertEquals(1, dismissed) }
+    }
+
+    @Test fun manualBrowseReturnsAfterFiveIdleSecondsAndTouchRestartsDeadline() {
+        compose.setContent { LeesTheme { LyricsLines(lyrics, 3000) { fail("browsing must not seek") } } }
+        compose.onNodeWithTag("lyrics-lines").performTouchInput { swipeUp() }
+        compose.waitForIdle()
+        compose.mainClock.autoAdvance = false
+        compose.mainClock.advanceTimeBy(4000)
+        compose.onNodeWithTag("lyrics-follow").assertExists()
+        compose.onNodeWithTag("lyrics-lines").performTouchInput { down(center) }
+        compose.mainClock.advanceTimeBy(6000)
+        compose.onNodeWithTag("lyrics-follow").assertExists()
+        compose.onNodeWithTag("lyrics-lines").performTouchInput { cancel() }
+        compose.mainClock.advanceTimeBy(4000)
+        compose.onNodeWithTag("lyrics-follow").assertExists()
+        compose.mainClock.advanceTimeBy(1600)
+        compose.onNodeWithTag("lyrics-follow").assertDoesNotExist()
+        compose.mainClock.autoAdvance = true
+        compose.onNodeWithTag("lyric-3").assertIsDisplayed().assertIsSelected()
+    }
+
+    @Test fun lyricsScrollNormallyAndDownwardOverscrollDismisses() {
+        var dismissed = 0
+        compose.setContent { LeesTheme {
+            com.lyq2010.leesmusic.ui.player.PlaybackDismiss({ dismissed++ }) {
+                LyricsLines(lyrics, 0) { fail("scrolling must not seek") }
+            }
+        } }
+        compose.onNodeWithTag("lyrics-lines").performTouchInput { swipeUp() }
+        compose.runOnIdle { assertEquals(0, dismissed) }
+        compose.onNodeWithTag("lyrics-follow").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag("lyrics-lines").performTouchInput { swipeDown() }
+        compose.runOnIdle { assertEquals(1, dismissed) }
+    }
+
     @Test fun manualBrowseDoesNotSeekOrGetPulledBackAndCanResumeFollowing() {
         val position = mutableLongStateOf(3000)
         var sought = -1L

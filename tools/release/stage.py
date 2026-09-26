@@ -21,7 +21,7 @@ subprocess.run(["git", "archive", "--format=zip", f"--output={source}", "HEAD"],
 digest = hashlib.sha256(apk.read_bytes()).hexdigest()
 manifest = dict(version=version, versionCode=element["versionCode"], packageName=metadata["applicationId"],
                 apk=apk.name, sha256=digest, size=apk.stat().st_size, minSdk=26,
-                notes=(root / "docs/RELEASE_NOTES.md").read_text(encoding="utf-8").strip())
+                notes=(root / "docs/APP_CHANGELOG.md").read_text(encoding="utf-8").strip())
 (assets / "latest-lees-music.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 (assets / f"lees-music-{version}-SHA256SUMS.txt").write_text("\n".join(
     f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}" for p in (apk, source)) + "\n", encoding="utf-8")

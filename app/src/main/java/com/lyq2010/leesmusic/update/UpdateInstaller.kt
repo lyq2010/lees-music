@@ -9,6 +9,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.core.content.FileProvider
 import java.io.File
+import com.lyq2010.leesmusic.BuildConfig
 
 @Suppress("DEPRECATION")
 object UpdateInstaller {
@@ -16,6 +17,15 @@ object UpdateInstaller {
     private fun signers(info: PackageInfo): Set<String> =
         (if (Build.VERSION.SDK_INT >= 28) info.signingInfo?.apkContentsSigners else info.signatures)
             .orEmpty().map { it.toCharsString() }.toSet()
+
+    fun cleanupCache(context: Context) {
+        val file = File(context.cacheDir, "updates/update.apk")
+        UpdateCache.removeInstalled(file, BuildConfig.VERSION_CODE.toLong()) { candidate ->
+            val info = context.packageManager.getPackageArchiveInfo(candidate.absolutePath, 0)
+                ?.takeIf { it.packageName == context.packageName }
+            info?.let { if (Build.VERSION.SDK_INT >= 28) it.longVersionCode else it.versionCode.toLong() }
+        }
+    }
 
     fun verify(context: Context, file: File, manifest: UpdateManifest) {
         val installed = context.packageManager.getPackageInfo(context.packageName, flags)

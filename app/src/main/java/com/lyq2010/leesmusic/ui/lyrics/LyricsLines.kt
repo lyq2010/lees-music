@@ -15,6 +15,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
@@ -31,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lyq2010.leesmusic.data.api.StructuredLyrics
 import com.lyq2010.leesmusic.ui.player.PlaybackWhite
+import kotlinx.coroutines.delay
 
 @Composable
 internal fun LyricsLines(lyrics: StructuredLyrics, positionMs: Long, onSeek: (Long) -> Unit) {
@@ -39,6 +42,7 @@ internal fun LyricsLines(lyrics: StructuredLyrics, positionMs: Long, onSeek: (Lo
     val list = rememberLazyListState()
     var following by rememberSaveable { mutableStateOf(true) }
     val dragged by list.interactionSource.collectIsDraggedAsState()
+    var touching by remember { mutableStateOf(false) }
     var viewportHeight by remember { mutableIntStateOf(0) }
     val heights = remember { mutableStateMapOf<Int, Int>() }
     val density = LocalDensity.current
@@ -46,6 +50,12 @@ internal fun LyricsLines(lyrics: StructuredLyrics, positionMs: Long, onSeek: (Lo
     val activeHeight = heights[active.coerceAtLeast(0)] ?: defaultHeight
     var initialPositioned by remember { mutableStateOf(false) }
     LaunchedEffect(dragged) { if (dragged) following = false }
+    LaunchedEffect(following, touching, dragged, list.isScrollInProgress) {
+        if (lyrics.synced && !following && !touching && !dragged && !list.isScrollInProgress) {
+            delay(5_000)
+            following = true
+        }
+    }
     LaunchedEffect(active, following, viewportHeight, activeHeight) {
         if (!lyrics.synced || !following || viewportHeight == 0 || rows.isEmpty()) return@LaunchedEffect
         val index = active.coerceAtLeast(0)
@@ -59,6 +69,13 @@ internal fun LyricsLines(lyrics: StructuredLyrics, positionMs: Long, onSeek: (Lo
         LazyColumn(state = list,
             contentPadding = PaddingValues(horizontal = 32.dp, vertical = verticalPadding),
             modifier = Modifier.fillMaxSize().testTag("lyrics-lines")
+                .pointerInput(Unit) {
+                    try {
+                        awaitPointerEventScope {
+                            while (true) touching = awaitPointerEvent(PointerEventPass.Initial).changes.any { it.pressed }
+                        }
+                    } finally { touching = false }
+                }
                 .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                 .drawWithContent {
                     drawContent()

@@ -24,6 +24,7 @@ fun LyricsScreen(
     shuffle: Boolean = false, buffering: Boolean = false, canPrevious: Boolean = true, canNext: Boolean = true,
     onShuffle: () -> Unit = {}, onQueue: () -> Unit = {}, onMore: () -> Unit = {},
     sleepRemainingMs: Long = 0L, onSleepTimer: () -> Unit = {},
+    onDismiss: () -> Unit = onBack,
 ) {
     var state by remember(song?.id, server) { mutableStateOf<LyricsUiState>(LyricsUiState.Loading) }
     var retry by remember { mutableIntStateOf(0) }
@@ -42,19 +43,21 @@ fun LyricsScreen(
             state = LyricsUiState.Failed
         }
     }
-    Column(Modifier.fillMaxSize().background(PlaybackGradient).safeDrawingPadding().testTag("lyrics-screen")) {
-        PlaybackHandle("返回封面", onBack)
-        Box(Modifier.weight(1f).fillMaxWidth()) {
-            when (val shown = state) {
-                is LyricsUiState.Ready -> key(song?.id, shown.lyrics) {
-                    LyricsLines(shown.lyrics, positionMs, onSeek)
+    PlaybackDismiss(onDismiss) {
+        Column(Modifier.fillMaxSize().background(PlaybackGradient).safeDrawingPadding().testTag("lyrics-screen")) {
+            PlaybackHandle("收起播放页", onDismiss)
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                when (val shown = state) {
+                    is LyricsUiState.Ready -> key(song?.id, shown.lyrics) {
+                        LyricsLines(shown.lyrics, positionMs, onSeek)
+                    }
+                    else -> LyricsMessage(shown) { retry++ }
                 }
-                else -> LyricsMessage(shown) { retry++ }
             }
+            PlaybackControls(song?.title.orEmpty(), song?.artist.orEmpty(), positionMs, durationMs,
+                isPlaying, volume, repeatMode, true, onSeek, onPlayPause, onVolume, onPrevious, onNext, onRepeat, onBack,
+                shuffle, buffering, canPrevious, canNext, onShuffle, onQueue, onMore, sleepRemainingMs, onSleepTimer)
         }
-        PlaybackControls(song?.title.orEmpty(), song?.artist.orEmpty(), positionMs, durationMs,
-            isPlaying, volume, repeatMode, true, onSeek, onPlayPause, onVolume, onPrevious, onNext, onRepeat, onBack,
-            shuffle, buffering, canPrevious, canNext, onShuffle, onQueue, onMore, sleepRemainingMs, onSleepTimer)
     }
 }
 
