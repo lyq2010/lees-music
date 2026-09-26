@@ -2,6 +2,12 @@ name: Android release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to build
+        required: true
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -15,6 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ inputs.tag || github.ref_name }}
           persist-credentials: false
       - uses: actions/setup-java@v6
         with:
@@ -37,7 +44,7 @@ jobs:
         run: bash gradlew testDebugUnitTest lintRelease assembleRelease --no-daemon --console=plain
       - name: Verify APK and stage corresponding source
         env:
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
           python3 tools/release/audit_apk.py app/build/outputs/apk/release/app-release.apk
@@ -45,14 +52,14 @@ jobs:
       - name: Preserve optimization mapping separately
         uses: actions/upload-artifact@v7
         with:
-          name: r8-mapping-${{ github.ref_name }}
+          name: r8-mapping-${{ inputs.tag || github.ref_name }}
           path: app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: error
           retention-days: 90
       - name: Publish immutable release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           gh release create "$TAG" artifacts/release/* --verify-tag --prerelease --title "Lee's Music ${TAG#v} 公开测试版" --notes-file docs/RELEASE_NOTES.md
       - name: Remove runner signing material
