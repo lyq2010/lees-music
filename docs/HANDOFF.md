@@ -5,7 +5,7 @@
 ## 当前版本
 
 - 0.1.1 / versionCode 2，标签 `v0.1.1`，公开测试版；包名 `com.lyq2010.leesmusic`，Android 8.0+，compile/targetSdk 37。
-- 发布入口：[GitHub Release](https://github.com/lyq2010/lees-music/releases/tag/v0.1.1)。正式构建、测试、签名和包内容检查由远端 CI 执行，发布成功后触发中央仓库 COS / R2 独立镜像 job。[0.1.1 构建 CI](https://github.com/lyq2010/lees-music/actions/runs/36264320767) 已成功并发布 GitHub；镜像结果在部署清理逻辑后记录。
+- 发布入口：[GitHub Release](https://github.com/lyq2010/lees-music/releases/tag/v0.1.1)。正式构建、测试、签名和包内容检查由远端 CI 执行，发布成功后触发中央仓库 COS / R2 独立镜像 job。[0.1.1 构建 CI](https://github.com/lyq2010/lees-music/actions/runs/36264320767) 已成功并发布 GitHub；[COS / R2 镜像 CI](https://github.com/lyq2010/lee-releases/actions/runs/36264831133) 已成功；两通道的清单、APK、源码及校验文件均与 GitHub 实际下载比对一致。
 - GPL-3.0-only；正式签名保存在指定外部备份目录，私钥与密码不进入 Git。已有 GitHub 0.1.0 可使用同一签名覆盖升级；不得为验证擅自卸载或清除用户数据。
 
 ## 0.1.1 交付内容
@@ -40,4 +40,6 @@ USB 日志确认：SM-S9310 / Android 16，GitHub 0.1.0 在 01:38:04、02:11:49�
 
 ## 镜像保留策略
 
-COS 与 R2 均只保留最新已验证的音乐版本；参考 Lee’s Mail 的先验证再清理顺序。新 APK、源码、校验文件及更新清单通过核验后，才删除文件名精确匹配的旧版资产。GitHub 历史版本保留。清理范围和分页异常的 5 项测试通过。
+COS 与 R2 均只保留最新已验证的音乐版本；参考 Lee’s Mail 的先验证再清理顺序。新 APK、源码、校验文件及更新清单通过核验后，才删除文件名精确匹配的旧版资产。GitHub 历史版本保留。清理范围和分页异常的 5 项测试通过。本轮两个通道均已删除 0.1.0 的 APK、源码 ZIP 和校验文件，仅保留 0.1.1；GitHub 0.1.0 未删除。
+
+远端正式 APK、对应源码、清单、校验文件和 R8 映射已下载到 `artifacts/release/0.1.1` 保存；GH 日志临时 ZIP 已清理。
