@@ -1,6 +1,7 @@
 # 项目文档
 
 - [更新记录](CHANGELOG.md)
+- [应用内版本记录](APP_CHANGELOG.md)
 - [产品设计与交互](PRODUCT.md)
 - [发布前产品检查](PRODUCT_REVIEW.md)
 - [开发交接与验证记录](HANDOFF.md)

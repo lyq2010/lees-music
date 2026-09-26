@@ -5,19 +5,33 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.CancellationException
 
 /** Owned above navigation and tabs, recreated whenever the configured account changes. */
-class LibraryBrowseCache {
-    val overview = LibraryOverviewState()
+class LibraryBrowseCache(private val disk: com.lyq2010.leesmusic.data.library.LibraryDiskCache? = null) {
+    val overview = LibraryOverviewState({ disk?.overview() }, { disk?.saveOverview(it) })
     private val pages = mutableMapOf<Pair<String, String>, LibraryPageState>()
+    private val albums = mutableMapOf<String, Pair<Int, com.lyq2010.leesmusic.data.api.Album>>()
     var generation by mutableIntStateOf(0)
         private set
 
     fun page(target: LibraryDestination): LibraryPageState =
-        pages.getOrPut(target.kind to target.id) { LibraryPageState() }
+        pages.getOrPut(target.kind to target.id) { LibraryPageState({ disk?.page(target) }, { disk?.save(target, it) }) }
 
     fun invalidate() { generation++ }
+
+    suspend fun album(id: String, fetch: suspend () -> com.lyq2010.leesmusic.data.api.Album): com.lyq2010.leesmusic.data.api.Album {
+        albums[id]?.takeIf { it.first == generation }?.let { return it.second }
+        val requestedGeneration = generation
+        val saved = if (generation == 0) disk?.album(id) else null
+        val result = saved ?: fetch()
+        if (generation == requestedGeneration) {
+            albums[id] = generation to result
+            if (saved == null) disk?.saveAlbum(result)
+        }
+        return result
+    }
 }
 
-class LibraryPageState {
+class LibraryPageState(private val restore: suspend () -> LibraryPage? = { null },
+    private val persist: suspend (LibraryPage) -> Unit = {}) {
     var data by mutableStateOf<LibraryPage?>(null)
         private set
     var filter by mutableStateOf("")
@@ -45,11 +59,13 @@ class LibraryPageState {
         loading = true
         error = null
         try {
-            val result = fetch()
+            val cached = if (!force && data == null && generation == 0 && revision == 0) restore() else null
+            val result = cached ?: fetch()
             if (current == request) {
                 data = result
                 loadedGeneration = generation
                 loadedRevision = revision
+                if (cached == null) persist(result)
             }
         } catch (cancelled: CancellationException) {
             throw cancelled

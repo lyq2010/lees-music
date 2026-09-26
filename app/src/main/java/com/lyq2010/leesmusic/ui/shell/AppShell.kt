@@ -41,6 +41,7 @@ import com.lyq2010.leesmusic.ui.discover.DiscoverScreen
 import com.lyq2010.leesmusic.ui.library.LibraryScreen
 import com.lyq2010.leesmusic.ui.search.SearchScreen
 import com.lyq2010.leesmusic.ui.settings.SettingsScreen
+import com.lyq2010.leesmusic.ui.player.trackSwipe
 
 private val tabs = listOf("首页", "发现", "搜索", "设置")
 
@@ -72,6 +73,10 @@ fun AppShell(
     onOpenPlayer: () -> Unit,
     onOpenAlbum: (com.lyq2010.leesmusic.ui.catalog.LibraryAlbum) -> Unit,
     onOpenServer: () -> Unit,
+    canPrevious: Boolean = false,
+    canNext: Boolean = false,
+    onPrevious: () -> Unit = {},
+    onNext: () -> Unit = {},
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     ShellTheme {
@@ -89,6 +94,7 @@ fun AppShell(
                 Modifier
                     .fillMaxWidth()
                     .height(64.dp)
+                    .trackSwipe(canPrevious, canNext, onPrevious, onNext)
                     .clickable(onClick = onOpenPlayer)
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,

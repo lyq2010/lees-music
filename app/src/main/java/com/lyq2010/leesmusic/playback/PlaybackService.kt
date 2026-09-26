@@ -27,6 +27,8 @@ class PlaybackService : MediaSessionService() {
     private lateinit var notificationLyrics: NotificationLyrics
     private lateinit var pipeline: PlaybackPipeline
     private lateinit var recoveringPlayer: RecoveringPlayer
+    private lateinit var persistence: PlaybackPersistence
+    private lateinit var widget: com.lyq2010.leesmusic.widget.PlaybackWidgetUpdater
     private val handler = Handler(Looper.getMainLooper())
     private val changed = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> handler.post { applyPreferences() } }
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
@@ -50,7 +52,17 @@ class PlaybackService : MediaSessionService() {
             { !policy.blocked() || pipeline.fullyCached(crossfade.currentMediaItem) }, pipeline::refreshConnections,
             pipeline::prefetch, pipeline::cancelPrefetch)
         managedPlayer = ManagedPlayer(recoveringPlayer, preferences)
-        mediaSession = MediaSession.Builder(this, managedPlayer).setCallback(sleepTimer).build()
+        mediaSession = MediaSession.Builder(this, managedPlayer).setCallback(sleepTimer)
+            .setSessionActivity(android.app.PendingIntent.getActivity(this, 0,
+                android.content.Intent(this, com.lyq2010.leesmusic.MainActivity::class.java)
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP),
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE)).build()
+        persistence = PlaybackPersistence(this, managedPlayer) {
+            mediaSession?.let { session -> session.setSessionExtras(android.os.Bundle(session.sessionExtras).apply {
+                putBoolean("playbackRestored", true)
+            }) }
+        }
+        widget = com.lyq2010.leesmusic.widget.PlaybackWidgetUpdater(this, managedPlayer)
         notificationLyrics = NotificationLyrics(this, managedPlayer, preferences)
         preferences.prefs.registerOnSharedPreferenceChangeListener(changed)
         getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(networkCallback)
@@ -64,12 +76,19 @@ class PlaybackService : MediaSessionService() {
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
 
+    override fun onTaskRemoved(rootIntent: android.content.Intent?) {
+        persistence.save()
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onDestroy() {
         preferences.prefs.unregisterOnSharedPreferenceChangeListener(changed)
         getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(networkCallback)
         handler.removeCallbacksAndMessages(null)
         sleepTimer.close()
         notificationLyrics.close()
+        persistence.close()
+        widget.close()
         mediaSession?.run { player.release(); release() }
         pipeline.close()
         mediaSession = null

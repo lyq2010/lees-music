@@ -20,7 +20,9 @@ suspend fun <T> readLibraryPages(id: (T) -> String, fetch: (Int) -> List<T>): Li
     }
 }
 
+@kotlinx.serialization.Serializable
 data class LibraryOverview(val favorites: List<LibrarySong>, val playlists: List<MusicPlaylist>)
+@kotlinx.serialization.Serializable
 data class LibraryPage(
     val songs: List<LibrarySong> = emptyList(),
     val albums: List<LibraryAlbum> = emptyList(),

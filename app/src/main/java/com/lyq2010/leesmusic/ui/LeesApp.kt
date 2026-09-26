@@ -73,7 +73,12 @@ fun LeesApp() {
     var ready by remember { mutableStateOf(false) }
     var settings by remember { mutableStateOf<ServerSettings?>(null) }
     val cacheNamespace = settings?.let { com.lyq2010.leesmusic.data.library.serverCacheIdentity(it.url, it.username, it.kind.name) } ?: "unconfigured"
-    val browseCache = remember(cacheNamespace, settings?.password) { com.lyq2010.leesmusic.ui.library.LibraryBrowseCache() }
+    val browseCache = remember(cacheNamespace, settings?.password) {
+        com.lyq2010.leesmusic.ui.library.LibraryBrowseCache(settings?.takeIf { it.kind == ServerKind.Navidrome }?.let {
+            com.lyq2010.leesmusic.data.library.LibraryDiskCache(
+                java.io.File(context.filesDir, "libraries/$cacheNamespace/browse"), SubsonicServer(it.url, it.username, it.password))
+        })
+    }
     val downloads = remember(cacheNamespace) { com.lyq2010.leesmusic.data.library.LibraryDownloads(context, cacheNamespace) }
     var shelfRevision by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     var libraryRevision by remember { androidx.compose.runtime.mutableIntStateOf(0) }
@@ -139,21 +144,21 @@ fun LeesApp() {
                 nowPlayingTitle = player.currentSongTitle()
                 currentSong = appPlayer.currentSong()
                 positionMs = player.currentPosition.coerceAtLeast(0L)
-                durationMs = player.duration.coerceAtLeast(0L)
+                durationMs = player.duration.takeIf { it > 0 } ?: ((appPlayer.currentSong()?.duration ?: 0) * 1000L)
             }
 
             override fun onIsPlayingChanged(playing: Boolean) {
                 isPlaying = playing
                 nowPlayingTitle = player.currentSongTitle()
                 positionMs = player.currentPosition.coerceAtLeast(0L)
-                durationMs = player.duration.coerceAtLeast(0L)
+                durationMs = player.duration.takeIf { it > 0 } ?: ((appPlayer.currentSong()?.duration ?: 0) * 1000L)
             }
         }
         player.addListener(listener)
         try {
             while (true) {
                 positionMs = player.currentPosition.coerceAtLeast(0L)
-                durationMs = player.duration.coerceAtLeast(0L)
+                durationMs = player.duration.takeIf { it > 0 } ?: ((appPlayer.currentSong()?.duration ?: 0) * 1000L)
                 isPlaying = player.isPlaying
                 volume = player.volume
                 repeatMode = player.repeatMode
@@ -269,7 +274,7 @@ fun LeesApp() {
             try {
                 val client = SubsonicClient(libraryHttp)
                 val server = SubsonicServer(current.url, current.username, current.password)
-                val loaded = withContext(Dispatchers.IO) { client.album(server, album.id) }
+                val loaded = browseCache.album(album.id) { withContext(Dispatchers.IO) { client.album(server, album.id) } }
                 if (settings != current) return@launch
                 openedTitle = loaded.name.ifBlank { album.name }
                 openedArtist = loaded.artist.ifBlank { album.artist }
@@ -399,6 +404,10 @@ fun LeesApp() {
                     status = ""
                     nav.navigate(Routes.Servers)
                 },
+                canPrevious = appPlayer.playerOrNull()?.hasPreviousMediaItem() == true,
+                canNext = canNext,
+                onPrevious = { appPlayer.playerOrNull()?.seekToPreviousMediaItem() },
+                onNext = { appPlayer.playerOrNull()?.seekToNextMediaItem() },
             )
         }
         composable(Routes.Daily) {

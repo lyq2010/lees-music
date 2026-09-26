@@ -36,25 +36,7 @@ class AppPlayer(context: Context) {
         }.getOrDefault(false)) }, mainExecutor)
     }
 
-    fun currentSong(): LibrarySong? = controller?.currentMediaItem?.let { item ->
-        val metadata = item.mediaMetadata
-        val extras = metadata.extras
-        LibrarySong(
-            id = item.mediaId,
-            title = metadata.title?.toString().orEmpty(),
-            artist = metadata.artist?.toString().orEmpty(),
-            coverArtId = extras?.getString("coverArtId"),
-            coverUrl = extras?.getString("coverUrl"),
-            duration = extras?.getInt("duration") ?: 0,
-            track = extras?.getInt("track") ?: 0,
-            suffix = extras?.getString("suffix").orEmpty(),
-            bitRate = extras?.getInt("bitRate") ?: 0,
-            albumId = extras?.getString("albumId"),
-            album = metadata.albumTitle?.toString().orEmpty(),
-            artistId = extras?.getString("artistId"),
-            localUri = extras?.getString("localUri"),
-        )
-    }
+    fun currentSong(): LibrarySong? = controller?.currentMediaItem?.let(::mediaItemSong)
 
     init {
         future.addListener(
@@ -68,7 +50,7 @@ class AppPlayer(context: Context) {
     fun play(server: SubsonicServer, songs: List<LibrarySong>, index: Int, start: Boolean = false, shuffle: Boolean = false) {
         val player = controller ?: return
         if (songs.isEmpty()) return
-        val items = songs.map { mediaItem(server, it) }
+        val items = songs.map { playbackMediaItem(server, it, preferences.quality.bitRate) }
         player.playWhenReady = start
         player.setMediaItems(items, index.coerceIn(0, items.lastIndex), 0)
         player.shuffleModeEnabled = shuffle
@@ -82,29 +64,9 @@ class AppPlayer(context: Context) {
         } else {
             freezeShuffleOrder(player)
             val index = if (next) (player.currentMediaItemIndex + 1).coerceAtMost(player.mediaItemCount) else player.mediaItemCount
-            player.addMediaItem(index, mediaItem(server, song))
+            player.addMediaItem(index, playbackMediaItem(server, song, preferences.quality.bitRate))
         }
         return true
-    }
-
-    private fun mediaItem(server: SubsonicServer, song: LibrarySong): MediaItem {
-        val client = SubsonicClient()
-        return MediaItem.Builder()
-                .setMediaId(song.id)
-                .setUri(song.localUri ?: client.streamUrl(server, song.id, preferences.quality.bitRate))
-                .setMediaMetadata(MediaMetadata.Builder().setTitle(song.title).setArtist(song.artist).setAlbumTitle(song.album)
-                    .setExtras(Bundle().apply {
-                        putString("coverArtId", song.coverArtId)
-                        putString("coverUrl", song.coverUrl)
-                        putInt("duration", song.duration)
-                        putInt("track", song.track)
-                        putString("suffix", song.suffix)
-                        putInt("bitRate", song.bitRate)
-                        putString("albumId", song.albumId)
-                        putString("artistId", song.artistId)
-                        putString("localUri", song.localUri)
-                    }).build())
-                .build()
     }
 
     fun release() {

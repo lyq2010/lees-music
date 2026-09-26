@@ -65,6 +65,10 @@ fun SettingsScreen(preferences: PlaybackPreferences, onOpenServer: () -> Unit, o
             LinkRow(Icons.Default.Storage, "存储空间管理", "缓存与下载", onStorage)
         }
         Section("更多") {
+            LinkRow(Icons.Default.Widgets, "桌面小组件", "添加播放控制器") {
+                dialog = "widget"
+            }
+            HorizontalDivider(Modifier.padding(start = 52.dp), color = ShellBg)
             LinkRow(Icons.Default.Palette, "个性化", "主题与外观", onPersonalization)
             HorizontalDivider(Modifier.padding(start = 52.dp), color = ShellBg)
             ToggleRow(Icons.Default.Lyrics, "通知栏歌词", "在播放通知中显示歌词", notificationLyrics) { preferences.notificationLyrics = it }
@@ -79,6 +83,18 @@ fun SettingsScreen(preferences: PlaybackPreferences, onOpenServer: () -> Unit, o
         }
         Spacer(Modifier.height(24.dp))
     }
+    if (dialog == "widget") AlertDialog(onDismissRequest = { dialog = "" }, title = { Text("添加桌面小组件") },
+        text = { Column {
+            com.lyq2010.leesmusic.widget.WidgetSize.entries.forEach { size ->
+                TextButton(onClick = {
+                    val manager = android.appwidget.AppWidgetManager.getInstance(context)
+                    if (manager.isRequestPinAppWidgetSupported) {
+                        manager.requestPinAppWidget(android.content.ComponentName(context, size.provider), null, null)
+                    } else android.widget.Toast.makeText(context, "请长按桌面，在小组件中选择 Lee’s Music", android.widget.Toast.LENGTH_LONG).show()
+                    dialog = ""
+                }) { Text(size.label) }
+            }
+        } }, confirmButton = { TextButton(onClick = { dialog = "" }) { Text("取消") } })
     if (dialog == "quality") AlertDialog(onDismissRequest = { dialog = "" }, title = { Text("在线播放音质") },
         text = { Column {
             Text("适用于新加入队列的歌曲。压缩音质需服务器支持。", color = ShellMuted)

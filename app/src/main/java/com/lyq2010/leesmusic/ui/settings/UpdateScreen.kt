@@ -22,7 +22,7 @@ fun UpdateScreen(onBack: () -> Unit) {
     val client = remember { UpdateClient(listOf(BuildConfig.COS_UPDATE_BASE, "https://plt-releases.leenbsl.workers.dev")) }
     var available by remember { mutableStateOf<AvailableUpdate?>(null) }
     var busy by remember { mutableStateOf(false) }
-    var message by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf("点击检查更新，获取最新版本") }
     var progress by remember { mutableFloatStateOf(0f) }
     var downloaded by remember { mutableStateOf(false) }
     val file = remember { File(context.cacheDir, "updates/update.apk") }
@@ -77,5 +77,6 @@ fun UpdateScreen(onBack: () -> Unit) {
             }) { Text(if (downloaded) "安装更新" else "下载更新") }
         }
         OutlinedButton(enabled = !busy, onClick = { check() }) { Text("检查更新") }
+        UpdateHistory()
     }
 }

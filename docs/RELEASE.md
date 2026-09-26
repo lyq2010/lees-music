@@ -22,7 +22,7 @@ GitHub Actions 使用三个 Secrets：`LEES_MUSIC_KEYSTORE_BASE64`、`LEES_MUSIC
 打标签并推送后，由本仓库 `Android release` CI 完成构建、签名和上传。CI 成功后执行：
 
 ```sh
-gh workflow run lees-music-mirrors.yml --repo lyq2010/lee-releases -f tag=v0.1.0
+gh workflow run lees-music-mirrors.yml --repo lyq2010/lee-releases -f tag=v0.1.1
 ```
 
 这是单独的镜像流程；COS 与 R2 无相互依赖，可分别检查和重试。后续发布替换为对应标签。
@@ -30,10 +30,10 @@ gh workflow run lees-music-mirrors.yml --repo lyq2010/lee-releases -f tag=v0.1.0
 如果标签事件没有启动构建，可手动选择既有标签；不会移动标签或替换已发布文件：
 
 ```sh
-gh workflow run release.yml --repo lyq2010/lees-music --ref main -f tag=v0.1.0
+gh workflow run release.yml --repo lyq2010/lees-music --ref main -f tag=v0.1.1
 ```
 
-正式包启用 R8 代码和资源精简，预览工具仅加入 debug。`audit_apk.py` 在 CI 中检查包内容；R8 映射表作为独立 CI artifact 保存，不进入 APK。更新依赖后执行 `releaseDependencyInventory` 和 `tools/release/notices.py`，同步第三方声明。
+正式包仅保留中文及英文回退资源，启用 R8 代码和资源精简，预览工具仅加入 debug。`audit_apk.py` 在 CI 中检查包内容；R8 映射表作为独立 CI artifact 保存，不进入 APK。更新依赖后执行 `releaseDependencyInventory` 和 `tools/release/notices.py`，同步第三方声明。
 
 更新器只在用户点击检查时联网；比较两个通道的有效版本，下载时校验长度与 SHA-256，安装前检查包名、版本和签名。安装由 Android 系统确认。无可用清单时明确报错，不显示“已是最新版本”。
 
@@ -42,7 +42,7 @@ gh workflow run release.yml --repo lyq2010/lees-music --ref main -f tag=v0.1.0
 标签格式 `v主版本.次版本.修订号`，修订号到 50 时进位。`versionCode` 每次发布必须增加。已发布版本不得覆盖重传。
 
 发布前完成：JVM 测试、Android 构建与 lint、MuMu 交互回归、正式 APK 签名核验、源码敏感信息检查、许可证及依赖声明检查。
-S25 的长时间锁屏、计费网络切换和系统安装授权必须单独记录结果，不能用 MuMu 通过代替真机验收。
+S25 连续后台播放及网络切换已由用户验收通过。独立长时锁屏、蓝牙切换、退出崩溃修复版、小组件及媒体胶囊仍按实际结果分别记录；长暂停恢复不作为交付阻碍，不能用 MuMu 通过代替未完成的真机验收。
 
 ## Google 开发者验证
 

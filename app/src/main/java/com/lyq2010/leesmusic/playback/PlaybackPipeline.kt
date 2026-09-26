@@ -24,6 +24,7 @@ internal class PlaybackPipeline(
         .connectTimeout(10, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true).build()
     private val prefetchClient = client.newBuilder().dispatcher(okhttp3.Dispatcher()).build()
+    private val connections = PlaybackConnections(client, prefetchClient)
     private val executor = Executors.newSingleThreadExecutor { task -> Thread(task, "music-prefetch").apply { isDaemon = true } }
     private val generation = AtomicLong()
     @Volatile private var writer: CacheWriter? = null
@@ -48,7 +49,7 @@ internal class PlaybackPipeline(
         val length = ContentMetadata.getContentLength(cache.getContentMetadata(key))
         return length >= 0 && cache.isCached(key, 0, length)
     }
-    fun refreshConnections() { client.connectionPool.evictAll() }
+    fun refreshConnections() { connections.refresh() }
 
     fun prefetch(items: List<MediaItem>, force: Boolean = false) {
         val remote = items.filter { it.localConfiguration?.uri?.scheme in setOf("http", "https") }
@@ -88,7 +89,7 @@ internal class PlaybackPipeline(
     }
     fun cancelPrefetch() {
         generation.incrementAndGet(); requested = emptyList()
-        writer?.cancel(); prefetchClient.dispatcher.cancelAll()
+        writer?.cancel(); connections.cancelPrefetch()
     }
-    fun close() { cancelPrefetch(); PlaybackCache.setProtected(cache, emptySet()); executor.shutdown(); client.dispatcher.cancelAll(); refreshConnections() }
+    fun close() { cancelPrefetch(); PlaybackCache.setProtected(cache, emptySet()); executor.shutdown(); connections.close() }
 }

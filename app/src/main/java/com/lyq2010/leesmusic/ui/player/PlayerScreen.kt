@@ -30,6 +30,7 @@ fun PlayerScreen(
     onShuffle: () -> Unit = {}, onQueue: () -> Unit = {}, onMore: () -> Unit = {},
     sleepRemainingMs: Long = 0L, onSleepTimer: () -> Unit = {},
 ) {
+    PlaybackDismiss(onBack) {
     Column(Modifier.fillMaxSize().background(PlaybackGradient).safeDrawingPadding()) {
         PlaybackHandle("收起播放页", onBack)
         Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 32.dp, vertical = 16.dp), contentAlignment = Alignment.Center) {
@@ -38,6 +39,7 @@ fun PlayerScreen(
         PlaybackControls(song?.title.orEmpty(), song?.artist.orEmpty(), positionMs, durationMs,
             isPlaying, volume, repeatMode, false, onSeek, onPlayPause, onVolume, onPrevious, onNext, onRepeat, onOpenLyrics,
             shuffle, buffering, canPrevious, canNext, onShuffle, onQueue, onMore, sleepRemainingMs, onSleepTimer)
+    }
     }
 }
 

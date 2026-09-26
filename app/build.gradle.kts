@@ -14,11 +14,14 @@ android {
         applicationId = "com.lyq2010.leesmusic"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.1.1"
         buildConfigField("String", "COS_UPDATE_BASE", "\"https://releases.angelolee.cn\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+
+    // The app UI is Chinese; retain English fallback for AndroidX controls.
+    androidResources { localeFilters += listOf("zh", "en") }
 
     signingConfigs {
         create("distribution") {
@@ -58,7 +61,7 @@ abstract class LegalAssetsTask : DefaultTask() {
     }
 }
 val copyLegalAssets = tasks.register<LegalAssetsTask>("copyLegalAssets") {
-    documents.from(rootProject.files("LICENSE", "docs/THIRD_PARTY_NOTICES.md"))
+    documents.from(rootProject.files("LICENSE", "docs/THIRD_PARTY_NOTICES.md", "docs/APP_CHANGELOG.md"))
     outputDirectory.set(layout.buildDirectory.dir("generated/legal-assets"))
 }
 androidComponents.onVariants { variant ->

@@ -3,7 +3,8 @@ package com.lyq2010.leesmusic.ui.library
 import androidx.compose.runtime.*
 import kotlinx.coroutines.CancellationException
 
-class LibraryOverviewState {
+class LibraryOverviewState(private val restore: suspend () -> LibraryOverview? = { null },
+    private val persist: suspend (LibraryOverview) -> Unit = {}) {
     var data by mutableStateOf<LibraryOverview?>(null)
         private set
     var loading by mutableStateOf(false)
@@ -20,8 +21,9 @@ class LibraryOverviewState {
         loading = true
         error = null
         try {
-            val result = fetch()
-            if (request == current) { data = result; loadedKey = key }
+            val cached = if (!force && data == null && generation == 0 && revision == 0) restore() else null
+            val result = cached ?: fetch()
+            if (request == current) { data = result; loadedKey = key; if (cached == null) persist(result) }
         } catch (cancelled: CancellationException) { throw cancelled
         } catch (_: Exception) { if (request == current) error = "音乐库读取失败，请检查连接后重试" }
         finally { if (request == current) loading = false }

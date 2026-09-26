@@ -6,6 +6,7 @@ import zipfile
 
 apk = Path(sys.argv[1])
 allowed_assets = {
+    "assets/APP_CHANGELOG.md",
     "assets/LICENSE", "assets/THIRD_PARTY_NOTICES.md", "assets/PublicSuffixDatabase.list",
     "assets/dexopt/baseline.prof", "assets/dexopt/baseline.profm",
 }
