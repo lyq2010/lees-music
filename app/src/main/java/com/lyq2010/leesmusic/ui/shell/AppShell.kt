@@ -2,6 +2,9 @@ package com.lyq2010.leesmusic.ui.shell
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
@@ -44,11 +47,14 @@ private val tabs = listOf("首页", "发现", "搜索", "设置")
 @Composable
 fun AppShell(
     serverLabel: String,
+    libraryContent: @Composable () -> Unit,
+    onOpenQueue: () -> Unit,
     newest: List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>,
     recent: List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>,
     frequent: List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>,
     randomAlbums: List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>,
-    searchResults: List<String>,
+    searchContent: @Composable () -> Unit,
+    settingsContent: @Composable () -> Unit,
     libraryMessage: String,
     http: okhttp3.OkHttpClient,
     daily: List<com.lyq2010.leesmusic.ui.catalog.LibrarySong>,
@@ -56,7 +62,6 @@ fun AppShell(
     onOpenDaily: () -> Unit,
     onPlayDaily: () -> Unit,
     onRefreshDaily: () -> Unit,
-    onSearch: (String) -> Unit,
     showPlayerBar: Boolean,
     nowPlayingTitle: String,
     nowPlayingArtist: String,
@@ -69,13 +74,14 @@ fun AppShell(
     onOpenServer: () -> Unit,
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    Column(Modifier.fillMaxSize().background(ShellBg)) {
+    ShellTheme {
+    Column(Modifier.fillMaxSize().background(ShellBg).safeDrawingPadding().imePadding()) {
         Column(Modifier.weight(1f)) {
             when (tab) {
-                0 -> LibraryScreen(serverLabel, newest, libraryMessage, http, onOpenAlbum)
+                0 -> libraryContent()
                 1 -> DiscoverScreen(daily, refreshingDaily, onOpenDaily, onPlayDaily, onRefreshDaily, newest, recent, frequent, randomAlbums, http, libraryMessage, onOpenAlbum)
-                2 -> SearchScreen(searchResults, onSearch)
-                else -> SettingsScreen(onOpenServer)
+                2 -> searchContent()
+                else -> settingsContent()
             }
         }
         if (showPlayerBar) Surface(color = ShellCard, modifier = Modifier.fillMaxWidth()) {
@@ -99,6 +105,7 @@ fun AppShell(
                         Text(nowPlayingArtist, color = ShellMuted, fontSize = 12.sp, maxLines = 1)
                     }
                 }
+                IconButton(onClick = onOpenQueue) { Icon(Icons.Default.QueueMusic, "播放队列", tint = ShellText) }
                 IconButton(onClick = onTogglePlay) {
                     Icon(
                         if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
@@ -132,5 +139,6 @@ fun AppShell(
                 }
             }
         }
+    }
     }
 }

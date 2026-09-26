@@ -16,8 +16,8 @@ data class LibraryShelf(
     fun isEmpty(): Boolean = newest.isEmpty() && recent.isEmpty() && frequent.isEmpty() && random.isEmpty()
 }
 
-class LibraryShelfStore(context: Context) {
-    private val file = File(context.filesDir, "library-shelf.json")
+class LibraryShelfStore(context: Context, namespace: String) {
+    private val file = File(context.filesDir, "libraries/$namespace/library-shelf.json")
     private val json = Json { ignoreUnknownKeys = true }
 
     fun load(): LibraryShelf? {
@@ -26,6 +26,7 @@ class LibraryShelfStore(context: Context) {
     }
 
     fun save(shelf: LibraryShelf) {
+        file.parentFile?.mkdirs()
         file.writeText(json.encodeToString(LibraryShelf.serializer(), shelf))
     }
 }

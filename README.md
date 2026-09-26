@@ -1,50 +1,59 @@
-# Lee's Music
+<div align="center">
 
-连接自建音乐库的安卓播放器。服务器可以是 Navidrome、Emby 或 Plex，每台只填一个地址。
+<img src="docs/design/app-icon-ripple.png" width="104" height="104" alt="应用图标" />
 
-> 状态：工程骨架已能构建，功能尚未开发。进度与交接信息见 [HANDOFF.md](HANDOFF.md)。
+# Lee’s Music
 
-## 为什么做它
+### 你的音乐，随身聆听。
 
-之前用 Symfonium 通过反向代理听 Navidrome，会出现三种问题：锁屏后停播，播到一半停住或连跳几首，暂停较久后恢复不了。网络质量本身没有问题。
+为自建音乐库打造的 Android 播放器。
+连接 Navidrome，让收藏、歌单与熟悉的旋律回到手边。
 
-Lee's Music 的首要目标是在同样的网络和代理条件下稳定播放：每首歌开始后先把整首快速下载到本地缓存，播放不依赖任何长时间闲置的网络连接。
+![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
+![GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue)
+![Status](https://img.shields.io/badge/状态-公开测试-8B7CF8)
 
-## 第一版功能（规划）
+[下载版本](https://github.com/lyq2010/lees-music/releases) · [更新记录](docs/CHANGELOG.md) · [反馈问题](https://github.com/lyq2010/lees-music/issues)
 
-- 浏览艺人、专辑、歌单，搜索
-- 后台播放，通知栏、锁屏和蓝牙控制
-- 每台服务器只填一个地址：主机、端口、路径，可选 HTTPS
-- 同步歌词
-- 服务器：Navidrome、Emby、Plex。目前只有 Navidrome 能登录并探测地址；Emby 和 Plex 可以先保存地址，接口还没接
-- 同步回 Navidrome：正在播放、播放次数、收藏、评分
-- 无缝播放、ReplayGain 音量均衡
-- 封面驱动的 Material 3 Expressive 界面：配色随当前专辑封面变化
+</div>
 
-## 技术栈
+---
 
-- Kotlin + Jetpack Compose，Compose Material 3 锁定 1.5.0-alpha29
-- Media3 1.11.1（ExoPlayer + `MediaLibraryService`）
-- OkHttp + kotlinx.serialization，对接 Subsonic / OpenSubsonic API
-- Coil 3 加载封面
-- AGP 9.4.1 + Gradle 9.6.0 + Kotlin 2.3.21；minSdk 26，targetSdk 37
+## 好好听歌，也好好管理收藏
 
-## 开发环境（Windows）
+- **浏览你的音乐库** — 歌曲、专辑、艺术家、收藏与个人歌单，集中呈现。
+- **发现下一首** — 每日推荐、最近添加、最近播放与随机推荐。
+- **快速找到想听的** — 按歌曲、专辑和艺术家搜索。
+- **沉浸式歌词** — 跟随播放进度高亮，支持手动浏览与点击跳转；歌词内容取决于服务器提供的数据。
+- **安排接下来的音乐** — 下一首播放、加入队列、调整顺序，以及随机与循环播放。
+- **随时离线收听** — 下载原音质歌曲，查看下载状态与存储占用。
 
-- Android Studio 2026.1.4 Patch 1（Quail 4），官方 zip 版解压在 `D:\Android\Android Studio`
-- Android SDK：`D:\Android\Sdk`
-- JDK：Android Studio 自带的 JBR
-- 在终端里构建时，只在当前会话临时设置 JDK：
+## 按你的习惯播放
 
-```powershell
-$env:JAVA_HOME = 'D:\Android\Android Studio\jbr'
-.\gradlew assembleDebug
-```
+| 功能 | 体验 |
+| --- | --- |
+| 后台播放 | 通知栏控制、耳机断开暂停、通知栏歌词 |
+| 聆听调节 | 均衡器预设、歌曲间淡入淡出、播放速度、睡眠定时 |
+| 外观个性化 | 跟随系统、浅色或深色模式，多种主题配色 |
+| 网络与存储 | 在线音质选择、计费网络控制、播放缓存容量与清理 |
+| 多服务器 | 保存并切换不同的 Navidrome 服务器 |
 
-- 测试设备：三星 Galaxy S25
+## 开始使用
 
-## 隐私
+1. 在 [Releases](https://github.com/lyq2010/lees-music/releases) 下载 APK，安装到 Android 8.0 或更高版本的设备。
+2. 添加 Navidrome 服务器，填写地址与登录信息。
+3. 打开音乐库，选择喜欢的歌曲。
 
-- 不内置遥测，不接入任何第三方统计或崩溃上报。
-- 服务器密码经 Android Keystore 加密后保存在手机本地。
-- 连接日志只保存在手机上，需要手动导出。
+当前提供公开测试版，支持 **Navidrome**；Emby、Plex 尚未接入。三星 S25 长时间锁屏及网络切换仍待真机验收。
+
+## 音乐属于你
+
+连接你自己的服务器，使用你自己的音乐收藏。无广告，不内置使用统计或第三方崩溃上报；服务器登录信息保存在设备本地。
+
+## 反馈与参与
+
+欢迎通过 [Issues](https://github.com/lyq2010/lees-music/issues) 报告问题或提出建议。反馈时请附上应用版本、设备型号、Android 版本及复现步骤，避免提交密码、令牌或私人服务器地址。
+
+## 开源许可
+
+Copyright © 2026 lyq2010。Lee’s Music 采用 [GNU GPL v3.0](LICENSE) 许可证；第三方组件见 [开源声明](docs/THIRD_PARTY_NOTICES.md)。

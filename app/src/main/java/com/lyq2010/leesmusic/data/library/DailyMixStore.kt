@@ -24,8 +24,8 @@ fun millisUntilNextMidnight(now: ZonedDateTime = ZonedDateTime.now()): Long {
 
 fun todayStamp(now: ZonedDateTime = ZonedDateTime.now()): String = now.toLocalDate().toString()
 
-class DailyMixStore(context: Context) {
-    private val file = File(context.filesDir, "daily-mix.json")
+class DailyMixStore(context: Context, namespace: String) {
+    private val file = File(context.filesDir, "libraries/$namespace/daily-mix.json")
     private val json = Json { ignoreUnknownKeys = true }
 
     fun load(): SavedDailyMix? {
@@ -34,6 +34,7 @@ class DailyMixStore(context: Context) {
     }
 
     fun save(songs: List<Song>, day: String = LocalDate.now().toString()) {
+        file.parentFile?.mkdirs()
         file.writeText(json.encodeToString(SavedDailyMix.serializer(), SavedDailyMix(day, songs)))
     }
 }

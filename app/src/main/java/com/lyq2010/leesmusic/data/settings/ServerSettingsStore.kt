@@ -13,6 +13,12 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+
+@Serializable
+private data class SavedServer(val kind: String, val url: String, val username: String, val encryptedPassword: String)
 
 enum class ServerKind {
     Navidrome,
@@ -30,6 +36,14 @@ data class ServerSettings(
 private val Context.serverSettingsDataStore by preferencesDataStore(name = "server_settings")
 
 class ServerSettingsStore(private val context: Context) {
+    private val serversKey = stringPreferencesKey("saved_servers")
+    suspend fun savedServers(): List<ServerSettings> {
+        val prefs = context.serverSettingsDataStore.data.first()
+        val records = prefs[serversKey]?.let { Json.decodeFromString<List<SavedServer>>(it) }.orEmpty()
+        val saved = records.map { ServerSettings(ServerKind.valueOf(it.kind), it.url, it.username, PasswordCipher.decrypt(it.encryptedPassword)) }
+        val active = load()
+        return (saved + listOfNotNull(active)).distinctBy { Triple(it.kind, it.url, it.username) }
+    }
     private val kindKey = stringPreferencesKey("kind")
     private val urlKey = stringPreferencesKey("url")
     private val lanKey = stringPreferencesKey("lan_url")
@@ -52,6 +66,15 @@ class ServerSettingsStore(private val context: Context) {
 
     suspend fun save(settings: ServerSettings) {
         context.serverSettingsDataStore.edit { prefs ->
+            val existing = prefs[serversKey]?.let { Json.decodeFromString<List<SavedServer>>(it) }.orEmpty().toMutableList()
+            val legacyUrl = prefs[urlKey] ?: prefs[lanKey] ?: prefs[wanKey]
+            if (legacyUrl != null && prefs[userKey] != null && prefs[passwordKey] != null) {
+                val legacy = SavedServer(prefs[kindKey] ?: ServerKind.Navidrome.name, normalizeServerUrl(legacyUrl), prefs[userKey]!!, prefs[passwordKey]!!)
+                if (existing.none { it.kind == legacy.kind && it.url == legacy.url && it.username == legacy.username }) existing += legacy
+            }
+            existing.removeAll { it.kind == settings.kind.name && it.url == settings.url.trim() && it.username == settings.username.trim() }
+            existing += SavedServer(settings.kind.name, settings.url.trim(), settings.username.trim(), PasswordCipher.encrypt(settings.password))
+            prefs[serversKey] = Json.encodeToString(existing)
             prefs[kindKey] = settings.kind.name
             prefs[urlKey] = settings.url.trim()
             prefs.remove(lanKey)

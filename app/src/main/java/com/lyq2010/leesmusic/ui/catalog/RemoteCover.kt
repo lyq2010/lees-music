@@ -20,17 +20,19 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 
 @Composable
-fun RemoteCover(coverId: String?, url: String?, modifier: Modifier = Modifier, http: OkHttpClient) {
+fun RemoteCover(coverId: String?, url: String?, modifier: Modifier = Modifier, http: OkHttpClient,
+    placeholder: @Composable () -> Unit = {}) {
     val context = LocalContext.current
-    var bitmap by remember(coverId) { mutableStateOf<Bitmap?>(coverId?.let(CoverImages::peek)) }
-    LaunchedEffect(coverId) {
+    val cacheKey = url?.let { com.lyq2010.leesmusic.data.library.resourceCacheIdentity(it) }
+    var bitmap by remember(cacheKey) { mutableStateOf<Bitmap?>(cacheKey?.let(CoverImages::peek)) }
+    LaunchedEffect(cacheKey) {
         if (coverId.isNullOrBlank() || url.isNullOrBlank() || bitmap != null) return@LaunchedEffect
         bitmap = withContext(Dispatchers.IO) {
-            runCatching { CoverImages.load(context, coverId, url, http) }.getOrNull()
+            runCatching { CoverImages.load(context, cacheKey ?: return@withContext null, url, http) }.getOrNull()
         }
     }
     if (bitmap == null) {
-        Box(modifier.background(ShellCard))
+        Box(modifier.background(ShellCard), contentAlignment = androidx.compose.ui.Alignment.Center) { placeholder() }
     } else {
         Image(bitmap!!.asImageBitmap(), contentDescription = null, modifier = modifier, contentScale = ContentScale.Crop)
     }

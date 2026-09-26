@@ -25,7 +25,19 @@ private val LeesLight = lightColorScheme(
 
 @Composable
 fun LeesTheme(content: @Composable () -> Unit) {
-    MaterialExpressiveTheme(colorScheme = LeesLight) {
-        Surface(modifier = Modifier.fillMaxSize(), color = Paper, contentColor = Ink, content = content)
+    com.lyq2010.leesmusic.ui.shell.ShellTheme {
+        val view = androidx.compose.ui.platform.LocalView.current
+        val background = androidx.compose.material3.MaterialTheme.colorScheme.background
+        val light = background.red + background.green + background.blue > 1.5f
+        androidx.compose.runtime.SideEffect {
+            (view.context as? android.app.Activity)?.let { activity ->
+                androidx.core.view.WindowCompat.getInsetsController(activity.window, view).apply {
+                    isAppearanceLightStatusBars = light
+                    isAppearanceLightNavigationBars = light
+                }
+            }
+        }
+        Surface(modifier = Modifier.fillMaxSize(), color = androidx.compose.material3.MaterialTheme.colorScheme.background,
+            contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onBackground, content = content)
     }
 }

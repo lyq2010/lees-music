@@ -1,32 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Mark must stay inside the 66dp safe-zone circle centered on the 108dp canvas.
-     Draw order matters: the butt-capped played segment covers the cached segment's round start cap. -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <group
-        android:translateX="-2"
-        android:translateY="1.5">
-        <path
-            android:pathData="M56,66 Q59.5,58 63,66 T70,66"
-            android:strokeWidth="7"
-            android:strokeColor="#FF8A65"
-            android:strokeLineCap="round" />
-        <path
-            android:pathData="M42,66 Q45.5,58 49,66 T56,66"
-            android:strokeWidth="7"
-            android:strokeColor="#FFD6B8"
-            android:strokeLineCap="butt" />
-        <path
-            android:pathData="M34,36 L34,66 L42,66"
-            android:strokeWidth="9"
-            android:strokeColor="#FFD6B8"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round" />
-        <path
-            android:fillColor="#FF8A65"
-            android:pathData="M80,66 m-3.5,0 a3.5,3.5 0,1 1,7 0 a3.5,3.5 0,1 1,-7 0" />
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Approved 100-unit preview maps to the central 72dp launcher viewport. -->
+    <group android:scaleX="0.8784" android:scaleY="0.8784" android:translateX="6.12" android:translateY="12.24">
+        <path android:pathData="M29,28 V58 C29,69 41,71 46,59 L52,44 C55,35 63,37 65,46 L68,59 C70,67 77,66 80,57" android:strokeWidth="7.8" android:strokeLineCap="round" android:strokeLineJoin="round">
+            <aapt:attr name="android:strokeColor">
+                <gradient android:type="linear" android:startX="26" android:startY="28" android:endX="80" android:endY="65">
+                    <item android:offset="0" android:color="#FFE6D4" />
+                    <item android:offset="0.48" android:color="#FFD1B3" />
+                    <item android:offset="1" android:color="#FF9D7A" />
+                </gradient>
+            </aapt:attr>
+        </path>
     </group>
 </vector>

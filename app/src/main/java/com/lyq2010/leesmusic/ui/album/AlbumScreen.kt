@@ -1,7 +1,6 @@
 package com.lyq2010.leesmusic.ui.album
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -51,6 +50,7 @@ fun AlbumScreen(
     onPlayInOrder: () -> Unit,
     onShuffle: () -> Unit,
     onPlay: (Int) -> Unit,
+    onMore: (LibrarySong) -> Unit,
 ) {
     Column(
         Modifier
@@ -91,17 +91,7 @@ fun AlbumScreen(
             }
         }
         songs.forEachIndexed { index, song ->
-            Row(
-                Modifier.fillMaxWidth().clickable { onPlay(index) }.padding(vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("${song.track.takeIf { it > 0 } ?: index + 1}", color = ShellMuted, modifier = Modifier.padding(end = 12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(song.title, color = ShellText, maxLines = 1, fontWeight = FontWeight.SemiBold)
-                    Text(songDetail(song), color = ShellMuted, fontSize = 12.sp, maxLines = 1)
-                }
-                Text(formatDuration(song.duration), color = ShellMuted, fontSize = 12.sp)
-            }
+            com.lyq2010.leesmusic.ui.catalog.SongRow(song, http, { onPlay(index) }, { onMore(song) })
         }
     }
 }
@@ -109,21 +99,4 @@ fun AlbumScreen(
 private fun albumMeta(year: Int, count: Int): String {
     val yearText = if (year > 0) "$year · " else ""
     return "$yearText$count 首歌曲"
-}
-
-private fun songDetail(song: LibrarySong): String {
-    val format = buildString {
-        if (song.suffix.isNotBlank()) append(song.suffix.uppercase())
-        if (song.bitRate > 0) {
-            if (isNotEmpty()) append(" ")
-            append("${song.bitRate}K")
-        }
-    }
-    return if (format.isBlank()) song.artist else "$format  ${song.artist}"
-}
-
-private fun formatDuration(seconds: Int): String {
-    val minutes = seconds / 60
-    val remain = seconds % 60
-    return "%d:%02d".format(minutes, remain)
 }

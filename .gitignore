@@ -8,3 +8,9 @@ build/
 .idea/
 *.iml
 .DS_Store
+*.jks
+*.keystore
+*.p12
+*.pfx
+signing-recovery.json
+artifacts/

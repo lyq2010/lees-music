@@ -16,11 +16,25 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
+        buildConfigField("String", "COS_UPDATE_BASE", "\"https://releases.angelolee.cn\"")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("distribution") {
+            val path = providers.environmentVariable("LEES_MUSIC_KEYSTORE").orNull
+            if (path != null) {
+                storeFile = file(path)
+                storePassword = providers.environmentVariable("LEES_MUSIC_STORE_PASSWORD").get()
+                keyAlias = "lees-music"
+                keyPassword = providers.environmentVariable("LEES_MUSIC_KEY_PASSWORD").get()
+            }
+        }
+    }
     buildTypes {
         release {
-            isMinifyEnabled = false
+            optimization { enable = true }
+            signingConfig = signingConfigs.getByName("distribution")
         }
     }
 
@@ -31,7 +45,24 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
+}
+
+abstract class LegalAssetsTask : DefaultTask() {
+    @get:InputFiles abstract val documents: ConfigurableFileCollection
+    @get:OutputDirectory abstract val outputDirectory: DirectoryProperty
+    @TaskAction fun copyDocuments() {
+        val directory = outputDirectory.get().asFile.apply { mkdirs() }
+        documents.forEach { it.copyTo(directory.resolve(it.name), overwrite = true) }
+    }
+}
+val copyLegalAssets = tasks.register<LegalAssetsTask>("copyLegalAssets") {
+    documents.from(rootProject.files("LICENSE", "docs/THIRD_PARTY_NOTICES.md"))
+    outputDirectory.set(layout.buildDirectory.dir("generated/legal-assets"))
+}
+androidComponents.onVariants { variant ->
+    variant.sources.assets?.addGeneratedSourceDirectory(copyLegalAssets, LegalAssetsTask::outputDirectory)
 }
 
 kotlin {
@@ -47,7 +78,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
+    debugImplementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
@@ -56,7 +87,25 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.session)
+    implementation("androidx.media3:media3-datasource-okhttp:1.11.1")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation(libs.okhttp.mockwebserver)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation("junit:junit:4.13.2")
     debugImplementation(libs.androidx.compose.ui.tooling)
+}
+
+tasks.register("releaseDependencyInventory") {
+    doLast {
+        val output = layout.buildDirectory.file("reports/release-dependencies.tsv").get().asFile
+        output.parentFile.mkdirs()
+        output.writeText(configurations.getByName("releaseRuntimeClasspath").resolvedConfiguration.resolvedArtifacts
+            .sortedBy { it.moduleVersion.id.toString() }.joinToString("\n") {
+                "${it.moduleVersion.id}\t${it.file.absolutePath}"
+            } + "\n")
+    }
 }

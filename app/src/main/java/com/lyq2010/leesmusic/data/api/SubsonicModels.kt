@@ -17,6 +17,13 @@ data class SubsonicBody(
     val searchResult3: SearchResult? = null,
     val randomSongs: SongList? = null,
     val album: Album? = null,
+    val lyricsList: LyricsList? = null,
+    val lyrics: PlainLyrics? = null,
+    val artists: ArtistIndex? = null,
+    val artist: Artist? = null,
+    val starred2: SearchResult? = null,
+    val playlists: Playlists? = null,
+    val playlist: MusicPlaylist? = null,
 )
 
 @Serializable
@@ -64,12 +71,30 @@ data class Song(
     val track: Int = 0,
     val suffix: String = "",
     val bitRate: Int = 0,
+    val albumId: String? = null,
+    val artistId: String? = null,
+    val starred: String? = null,
 )
 
 @Serializable
 data class Artist(
     val id: String,
     val name: String,
+    val albumCount: Int = 0,
+    val album: List<Album> = emptyList(),
+    val coverArt: String? = null,
+    val artistImageUrl: String? = null,
+    val starred: String? = null,
+    val songCount: Int? = null,
+)
+
+@Serializable data class ArtistIndex(val index: List<ArtistGroup> = emptyList())
+@Serializable data class ArtistGroup(val name: String = "", val artist: List<Artist> = emptyList())
+@Serializable data class Playlists(val playlist: List<MusicPlaylist> = emptyList())
+@Serializable data class MusicPlaylist(
+    val id: String, val name: String, val owner: String = "",
+    val public: Boolean = false, val songCount: Int = 0, val coverArt: String? = null,
+    val entry: List<Song> = emptyList(),
 )
 
 class SubsonicException(val code: Int, message: String) : Exception(message)

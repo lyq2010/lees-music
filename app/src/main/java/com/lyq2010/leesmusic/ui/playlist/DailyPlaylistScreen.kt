@@ -1,14 +1,12 @@
 package com.lyq2010.leesmusic.ui.playlist
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -23,12 +21,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lyq2010.leesmusic.ui.catalog.LibrarySong
-import com.lyq2010.leesmusic.ui.catalog.RemoteCover
 import com.lyq2010.leesmusic.ui.shell.ShellCard
 import com.lyq2010.leesmusic.ui.shell.ShellBg
 import com.lyq2010.leesmusic.ui.shell.ShellMuted
@@ -41,6 +37,7 @@ fun DailyPlaylistScreen(
     http: OkHttpClient,
     onBack: () -> Unit,
     onPlay: (Int) -> Unit,
+    onMore: (LibrarySong) -> Unit,
     onPlayInOrder: () -> Unit = {},
     onShuffle: () -> Unit = {},
     title: String = "每日推荐",
@@ -73,17 +70,7 @@ fun DailyPlaylistScreen(
             }
         }
         songs.forEachIndexed { index, song ->
-            Row(
-                Modifier.clickable { onPlay(index) }.padding(vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("${index + 1}", color = ShellMuted, modifier = Modifier.padding(end = 10.dp))
-                RemoteCover(song.coverArtId, song.coverUrl, Modifier.size(44.dp).clip(RoundedCornerShape(6.dp)), http)
-                Column(Modifier.padding(start = 10.dp)) {
-                    Text(song.title, color = ShellText, maxLines = 1)
-                    Text(song.artist, color = ShellMuted, fontSize = 12.sp, maxLines = 1)
-                }
-            }
+            com.lyq2010.leesmusic.ui.catalog.SongRow(song, http, { onPlay(index) }, { onMore(song) })
         }
     }
 }
