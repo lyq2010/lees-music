@@ -16,7 +16,9 @@ GitHub Actions 使用三个 Secrets：`LEES_MUSIC_KEYSTORE_BASE64`、`LEES_MUSIC
 - GitHub Release：签名 APK、SHA-256、更新清单及对应源码归档。
 - 主通道：`https://releases.angelolee.cn/latest-lees-music.json`。
 - 备用通道：`https://plt-releases.leenbsl.workers.dev/latest-lees-music.json`。
-- COS 与 R2 各自运行独立镜像 job，先上传安装包及源码，再更新清单；一个镜像失败不阻止另一个。
+- COS 与 R2 各自运行独立镜像 job，先上传并校验 APK、源码和校验文件，再更新并复核清单；一个镜像失败不阻止另一个。
+- 每个镜像仅保留最新已验证版本，随后删除同项目更旧的 APK、源码包和校验文件；保留更新清单，不影响其他项目和 GitHub 历史版本。列举对象失败时不删除，完整性验证失败时不进入清理。
+- 镜像 workflow 从音乐仓库 main 获取维护中的工具，发布资产仍按输入标签从不可变 GitHub Release 下载。
 - 镜像使用 `lyq2010/lee-releases` 的已有 Secrets，避免在新项目复制云服务凭据。
 
 打标签并推送后，由本仓库 `Android release` CI 完成构建、签名和上传。CI 成功后执行：

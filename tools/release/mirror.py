@@ -7,6 +7,7 @@ import subprocess
 import sys
 import urllib.request
 import urllib.error
+from prune import prune_cos, prune_r2, cloudflare_request
 
 assets = Path("assets")
 manifest = json.loads((assets / "latest-lees-music.json").read_text(encoding="utf-8"))
@@ -66,18 +67,29 @@ except urllib.error.HTTPError as error:
 
 for file in files:
     upload(file)
-with fetch(apk_name) as response:
-    digest = hashlib.sha256()
-    size = 0
-    while chunk := response.read(1024 * 1024):
-        size += len(chunk)
-        if size > manifest["size"]:
-            raise SystemExit("Remote APK size mismatch")
-        digest.update(chunk)
-    if size != manifest["size"] or digest.hexdigest() != manifest["sha256"]:
-        raise SystemExit("Remote APK verification failed; feed not published")
+for file in files:
+    with fetch(file.name) as response:
+        digest = hashlib.sha256()
+        size = 0
+        while chunk := response.read(1024 * 1024):
+            size += len(chunk)
+            if size > file.stat().st_size:
+                raise SystemExit("Remote asset size mismatch")
+            digest.update(chunk)
+        if size != file.stat().st_size or digest.hexdigest() != hashlib.sha256(file.read_bytes()).hexdigest():
+            raise SystemExit("Remote asset verification failed; feed not published")
 upload(assets / "latest-lees-music.json")
 with fetch("latest-lees-music.json") as response:
     if json.load(response) != manifest:
         raise SystemExit("Published feed differs from release")
 print(f"Verified {sys.argv[1]} mirror: {manifest['version']}")
+
+# Each independent channel prunes only after every asset and the feed have passed verification.
+if sys.argv[1] == "cos":
+    prune_cos(client, os.environ["TENCENT_COS_BUCKET"], version)
+else:
+    token = os.environ["CLOUDFLARE_API_TOKEN"]
+    account = urllib.parse.quote(os.environ["CLOUDFLARE_ACCOUNT_ID"], safe="")
+    bucket_path = f"/accounts/{account}/r2/buckets/packing-list-releases/objects"
+    prune_r2(lambda method, path, params=None: cloudflare_request(token, method, path, params), bucket_path, version)
+print("Old-version cleanup complete")
