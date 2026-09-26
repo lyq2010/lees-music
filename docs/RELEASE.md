@@ -27,6 +27,14 @@ gh workflow run lees-music-mirrors.yml --repo lyq2010/lee-releases -f tag=v0.1.0
 
 这是单独的镜像流程；COS 与 R2 无相互依赖，可分别检查和重试。后续发布替换为对应标签。
 
+如果标签事件没有启动构建，可手动选择既有标签；不会移动标签或替换已发布文件：
+
+```sh
+gh workflow run release.yml --repo lyq2010/lees-music --ref main -f tag=v0.1.0
+```
+
+正式包启用 R8 代码和资源精简，预览工具仅加入 debug。`audit_apk.py` 在 CI 中检查包内容；R8 映射表作为独立 CI artifact 保存，不进入 APK。更新依赖后执行 `releaseDependencyInventory` 和 `tools/release/notices.py`，同步第三方声明。
+
 更新器只在用户点击检查时联网；比较两个通道的有效版本，下载时校验长度与 SHA-256，安装前检查包名、版本和签名。安装由 Android 系统确认。无可用清单时明确报错，不显示“已是最新版本”。
 
 ## 版本规则与门禁
