@@ -4,9 +4,15 @@
 
 ## 当前版本
 
-- 0.1.2 / versionCode 3，标签 `v0.1.2`，公开测试版；包名 `com.lyq2010.leesmusic`，Android 8.0+，compile/targetSdk 37。
-- 发布入口：[GitHub Release](https://github.com/lyq2010/lees-music/releases/tag/v0.1.2)。正式构建、测试、签名和包内容检查由远端 CI 执行，发布成功后触发中央仓库 COS / R2 独立镜像 job。[0.1.2 构建 CI](https://github.com/lyq2010/lees-music/actions/runs/36266410695) 已成功并发布 GitHub；[COS / R2 镜像 CI](https://github.com/lyq2010/lee-releases/actions/runs/36266811830) 已成功；两通道的清单、APK、源码及校验文件均与 GitHub 实际下载比对一致。
+- 1.0.0 / versionCode 4，标签 `v1.0.0`，首个正式版；包名 `com.lyq2010.leesmusic`，Android 8.0+，compile/targetSdk 37。
+- 发布入口：[GitHub Release](https://github.com/lyq2010/lees-music/releases/tag/v1.0.0)。正式构建、测试、签名和包内容检查由远端 CI 执行，发布成功后触发中央仓库 COS / R2 独立镜像 job。本次发布及镜像状态待远端验证后补记。
 - GPL-3.0-only；正式签名保存在指定外部备份目录，私钥与密码不进入 Git。已有 GitHub 0.1.0 可使用同一签名覆盖升级；不得为验证擅自卸载或清除用户数据。
+
+## 1.0.0 交付内容
+
+- 每日推荐的文字和刷新、播放图标固定使用白色，封面黑色遮罩透明度由 38% 调整为 60%，不再随浅色主题切为深色文字。
+- 应用内更新记录仅保留 1.0.0 的简短中文产品文案；GitHub Release 改为正式版并设为最新版本，首页状态同步更新。
+- 65 项 JVM 测试、debug 构建及 release lint 已通过；新增 MuMu 4 项回归全部通过，覆盖黑白封面与浅深主题的组合、文字和图标的实际白色像素，以及查看全部、刷新和播放点击回调；截图已复核。另有 5 项镜像清理测试通过。S25 本轮显示尚未验收。
 
 ## 0.1.2 交付内容
 

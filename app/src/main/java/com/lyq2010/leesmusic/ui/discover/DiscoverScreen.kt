@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -111,19 +112,20 @@ private fun DailyCard(
             .clip(RoundedCornerShape(18.dp)),
     ) {
         RemoteCover(cover?.coverArtId, cover?.coverUrl, Modifier.matchParentSize(), http)
-        Box(Modifier.matchParentSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.38f)))
+        // Keep cover content readable independently of the app theme and cover brightness.
+        Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.60f)))
         Column(Modifier.align(androidx.compose.ui.Alignment.BottomStart).padding(16.dp)) {
-            Text("每日推荐", color = ShellText, fontSize = 13.sp)
-            Text(cover?.title ?: "正在准备", color = ShellText, fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text("每日推荐", color = Color.White, fontSize = 13.sp)
+            Text(cover?.title ?: "正在准备", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             Text(
                 if (refreshing) "正在更新" else "50 首歌曲    查看全部  >",
-                color = ShellText,
+                color = Color.White,
                 fontSize = 13.sp,
                 modifier = Modifier.padding(top = 4.dp).clickable(onClick = onOpen),
             )
         }
         IconButton(onClick = onRefresh, modifier = Modifier.align(androidx.compose.ui.Alignment.TopStart), enabled = !refreshing) {
-            Icon(Icons.Filled.Refresh, contentDescription = "刷新每日推荐", tint = ShellText)
+            Icon(Icons.Filled.Refresh, contentDescription = "刷新每日推荐", tint = Color.White)
         }
         Box(
             Modifier
@@ -135,7 +137,7 @@ private fun DailyCard(
                 .clickable(onClick = onPlay),
             contentAlignment = androidx.compose.ui.Alignment.Center,
         ) {
-            Icon(Icons.Filled.PlayArrow, contentDescription = "顺序播放每日推荐", tint = ShellText)
+            Icon(Icons.Filled.PlayArrow, contentDescription = "顺序播放每日推荐", tint = Color.White)
         }
     }
 }

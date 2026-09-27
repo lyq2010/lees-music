@@ -61,7 +61,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag || github.ref_name }}
         run: |
-          gh release create "$TAG" artifacts/release/* --verify-tag --prerelease --title "Lee's Music ${TAG#v} 公开测试版" --notes-file docs/RELEASE_NOTES.md
+          gh release create "$TAG" artifacts/release/* --verify-tag --latest --title "Lee's Music ${TAG#v} 正式版" --notes-file docs/RELEASE_NOTES.md
       - name: Remove runner signing material
         if: always()
         run: rm -f "$RUNNER_TEMP/music.p12"

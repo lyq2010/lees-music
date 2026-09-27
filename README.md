@@ -11,7 +11,7 @@
 
 ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
 ![GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue)
-![Status](https://img.shields.io/badge/状态-公开测试-8B7CF8)
+![Status](https://img.shields.io/badge/状态-正式版-8B7CF8)
 
 [下载版本](https://github.com/lyq2010/lees-music/releases) · [更新记录](docs/CHANGELOG.md) · [反馈问题](https://github.com/lyq2010/lees-music/issues)
 
@@ -47,7 +47,7 @@
 2. 添加 Navidrome 服务器，填写地址与登录信息。
 3. 打开音乐库，选择喜欢的歌曲。
 
-当前提供公开测试版，支持 **Navidrome**；Emby、Plex 尚未接入。三星 S25 连续后台播放及网络切换已通过验收；退出崩溃修复版、小组件和系统媒体胶囊仍待真机确认。
+当前提供正式版，支持 **Navidrome**；Emby、Plex 尚未接入。三星 S25 连续后台播放及网络切换已通过验收；退出崩溃修复版、小组件和系统媒体胶囊仍待真机确认。
 
 ## 音乐属于你
 
