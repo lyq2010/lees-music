@@ -4,9 +4,10 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.mockwebserver.*
 import org.junit.Assert.*
 import org.junit.Test
+import kotlinx.coroutines.runBlocking
 
 class SearchAndArtistApiTest {
-    @Test fun artistFavoriteUsesArtistIdAndArtworkMetadataIsPreserved() {
+    @Test fun artistFavoriteUsesArtistIdAndArtworkMetadataIsPreserved() = runBlocking {
         MockWebServer().use { server ->
             val source = SubsonicServer(server.url("/").toString(), "lee", "secret")
             val client = SubsonicClient()
@@ -27,7 +28,7 @@ class SearchAndArtistApiTest {
         }
     }
 
-    @Test fun searchPaginationRequestsOnlySelectedCategoryAndEncodesQuery() {
+    @Test fun searchPaginationRequestsOnlySelectedCategoryAndEncodesQuery() = runBlocking {
         MockWebServer().use { server ->
             val source = SubsonicServer(server.url("/").toString(), "lee", "secret")
             for (kind in listOf("song", "album", "artist")) {

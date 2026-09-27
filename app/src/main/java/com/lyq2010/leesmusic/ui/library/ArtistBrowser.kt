@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
@@ -66,7 +67,9 @@ internal fun ArtistBrowser(state: LibraryPageState, server: SubsonicServer?, cli
                     if (state.artistGrid) "切换列表视图" else "切换网格视图")
             }
             Box {
-                IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "艺术家排序与筛选") }
+                IconButton(onClick = { menu = true }) {
+                    Icon(Icons.AutoMirrored.Filled.Sort, "排序", tint = ShellText)
+                }
                 DropdownMenu(menu, { menu = false }) {
                     listOf("名称 A–Z", "名称 Z–A", "专辑数量").forEachIndexed { index, label ->
                         DropdownMenuItem(text = { Text(label + if (state.artistSort == index) " ✓" else "") },

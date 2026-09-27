@@ -38,6 +38,16 @@ fun ServerEndpoint.toUrl(): String {
 fun normalizeServerUrl(url: String): String =
     url.trim().replace(Regex("^(https?)://https?://"), "$1://")
 
+/** A pasted full URL updates every endpoint field, including its scheme. */
+fun endpointFromHostInput(input: String, current: ServerEndpoint): ServerEndpoint {
+    val value = input.trim()
+    if (!value.startsWith("https://", ignoreCase = true) && !value.startsWith("http://", ignoreCase = true)) {
+        return current.copy(host = input)
+    }
+    return runCatching { parseEndpoint(value, current.https) }
+        .getOrNull()?.takeIf { it.host.isNotBlank() } ?: current.copy(host = input)
+}
+
 fun parseEndpoint(url: String, httpsDefault: Boolean): ServerEndpoint {
     if (url.isBlank()) return ServerEndpoint(https = httpsDefault)
     val uri = URI(normalizeServerUrl(url))

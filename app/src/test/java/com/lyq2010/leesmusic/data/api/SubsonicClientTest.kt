@@ -5,6 +5,7 @@ import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
+import kotlinx.coroutines.runBlocking
 
 class SubsonicClientTest {
     @Test
@@ -13,7 +14,7 @@ class SubsonicClientTest {
     }
 
     @Test
-    fun pingReadsOkResponse() {
+    fun pingReadsOkResponse() = runBlocking {
         val server = MockWebServer()
         server.enqueue(MockResponse().setBody("""{"subsonic-response":{"status":"ok","version":"1.16.1"}}"""))
         server.start()
@@ -30,7 +31,7 @@ class SubsonicClientTest {
     }
 
     @Test
-    fun failedStatusThrowsSubsonicException() {
+    fun failedStatusThrowsSubsonicException() = runBlocking {
         val server = MockWebServer()
         server.enqueue(
             MockResponse().setBody(
@@ -40,7 +41,7 @@ class SubsonicClientTest {
         server.start()
         try {
             val error = assertThrows(SubsonicException::class.java) {
-                SubsonicClient().ping(server.config())
+                runBlocking { SubsonicClient().ping(server.config()) }
             }
             assertEquals(40, error.code)
         } finally {
@@ -49,7 +50,7 @@ class SubsonicClientTest {
     }
 
     @Test
-    fun newestAlbumsParsesAlbumList() {
+    fun newestAlbumsParsesAlbumList() = runBlocking {
         val server = MockWebServer()
         server.enqueue(
             MockResponse().setBody(

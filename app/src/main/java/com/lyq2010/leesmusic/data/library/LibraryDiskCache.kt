@@ -12,17 +12,24 @@ import java.io.File
 import java.security.MessageDigest
 
 /** Account-scoped metadata; signed artwork URLs are regenerated on read. */
-class LibraryDiskCache(private val root: File, private val server: SubsonicServer) {
+class LibraryDiskCache(private val root: File, private val server: SubsonicServer,
+    private val maxBytes: Long = 64L * 1024 * 1024) {
+    private val writeLock = Any()
     private val json = Json { ignoreUnknownKeys = true }
     private val client = SubsonicClient()
     private fun file(key: String) = AtomicFile(File(root, MessageDigest.getInstance("SHA-256")
         .digest(key.toByteArray()).joinToString("") { "%02x".format(it) } + ".json"))
+    fun updatedAt(target: LibraryDestination): Long = file("${target.kind}:${target.id}").baseFile.lastModified()
+    fun overviewUpdatedAt(): Long = file("overview").baseFile.lastModified()
     private fun read(key: String) = runCatching { file(key).openRead().bufferedReader().use { it.readText() } }.getOrNull()
-    private fun write(key: String, text: String) {
+    private fun write(key: String, text: String) = synchronized(writeLock) {
         root.mkdirs()
         val target = file(key)
+        val bytes = text.toByteArray()
+        val used = root.listFiles().orEmpty().filter { it.isFile }.sumOf { it.length() }
+        if (used - target.baseFile.length() + bytes.size > maxBytes) return@synchronized
         val stream = target.startWrite()
-        try { stream.write(text.toByteArray()); target.finishWrite(stream) }
+        try { stream.write(bytes); target.finishWrite(stream) }
         catch (error: Exception) { target.failWrite(stream); throw error }
     }
     suspend fun page(target: LibraryDestination): LibraryPage? = withContext(Dispatchers.IO) {

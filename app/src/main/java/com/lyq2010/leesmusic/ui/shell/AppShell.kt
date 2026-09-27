@@ -73,6 +73,7 @@ fun AppShell(
     onOpenPlayer: () -> Unit,
     onOpenAlbum: (com.lyq2010.leesmusic.ui.catalog.LibraryAlbum) -> Unit,
     onOpenServer: () -> Unit,
+    onHomeClick: () -> Unit = {},
     canPrevious: Boolean = false,
     canNext: Boolean = false,
     onPrevious: () -> Unit = {},
@@ -127,7 +128,7 @@ fun AppShell(
                 Column(
                     Modifier
                         .weight(1f)
-                        .clickable { tab = index }
+                        .clickable { tab = index; if (index == 0) onHomeClick() }
                         .padding(vertical = 6.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {

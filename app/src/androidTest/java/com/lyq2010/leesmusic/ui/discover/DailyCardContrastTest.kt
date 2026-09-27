@@ -12,6 +12,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.lyq2010.leesmusic.data.library.resourceCacheIdentity
 import com.lyq2010.leesmusic.ui.catalog.CoverImages
 import com.lyq2010.leesmusic.ui.catalog.LibrarySong
+import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Response
@@ -43,7 +44,7 @@ class DailyCardContrastTest {
                 .code(200).message("OK").body(bytes.toResponseBody()).build()
         }.build()
         val url = "https://daily-card-test.invalid/cover/$coverColor"
-        val cover = CoverImages.load(context, resourceCacheIdentity(url), url, http)
+        val cover = runBlocking { CoverImages.load(context, resourceCacheIdentity(url), url, http) }
         assertNotNull(cover)
         assertEquals(coverColor, cover!!.getPixel(0, 0))
         var opened = 0

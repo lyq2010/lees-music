@@ -1,6 +1,7 @@
 package com.lyq2010.leesmusic.ui
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.safeDrawing
 import com.lyq2010.leesmusic.ui.catalog.toLibrarySong
@@ -14,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -72,8 +74,12 @@ fun LeesApp() {
     }
     val nav = rememberNavController()
     val scope = rememberCoroutineScope()
-    var ready by remember { mutableStateOf(false) }
-    var settings by remember { mutableStateOf<ServerSettings?>(null) }
+    val account = remember { AccountSessionState() }
+    var ready by account.ready
+    var startupError by account.startupError
+    var recoveryError by account.recoveryError
+    var startupAttempt by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    var settings by account.settings
     val cacheNamespace = settings?.let { com.lyq2010.leesmusic.data.library.serverCacheIdentity(it.url, it.username, it.kind.name) } ?: "unconfigured"
     val browseCache = remember(cacheNamespace, settings?.password) {
         com.lyq2010.leesmusic.ui.library.LibraryBrowseCache(settings?.takeIf { it.kind == ServerKind.Navidrome }?.let {
@@ -85,15 +91,21 @@ fun LeesApp() {
     var shelfRevision by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     var libraryRevision by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     var actionSong by remember(cacheNamespace) { mutableStateOf<com.lyq2010.leesmusic.ui.catalog.LibrarySong?>(null) }
+    var actionPlaylistId by remember(cacheNamespace) { mutableStateOf<String?>(null) }
+    var actionPlaylistIndex by remember(cacheNamespace) { androidx.compose.runtime.mutableIntStateOf(-1) }
+    var homeRequest by remember(cacheNamespace) { androidx.compose.runtime.mutableIntStateOf(0) }
+    fun showSongActions(song: com.lyq2010.leesmusic.ui.catalog.LibrarySong, playlistId: String? = null, index: Int = -1) {
+        actionPlaylistId = playlistId; actionPlaylistIndex = index; actionSong = song
+    }
     var queueOrderNotice by remember { mutableStateOf(false) }
     var showQueue by remember { mutableStateOf(false) }
     val mixStore = remember(cacheNamespace) { DailyMixStore(context, cacheNamespace) }
     val shelfStore = remember(cacheNamespace) { LibraryShelfStore(context, cacheNamespace) }
-    var savedServers by remember { mutableStateOf<List<ServerSettings>>(emptyList()) }
+    var savedServers by account.savedServers
     var editingServer by remember { mutableStateOf<ServerSettings?>(null) }
     var pendingKind by remember { mutableStateOf(ServerKind.Navidrome) }
-    var status by remember { mutableStateOf("") }
-    var busy by remember { mutableStateOf(false) }
+    var status by account.status
+    var busy by account.busy
     val libraryHttp = remember { OkHttpClient() }
     val lyricsRepository = remember { com.lyq2010.leesmusic.data.library.LyricsRepository(SubsonicClient(libraryHttp)) }
     var newest by remember { mutableStateOf<List<com.lyq2010.leesmusic.ui.catalog.LibraryAlbum>>(emptyList()) }
@@ -103,15 +115,9 @@ fun LeesApp() {
     var libraryMessage by remember { mutableStateOf("") }
     val searchState = remember(cacheNamespace, settings?.password) { com.lyq2010.leesmusic.ui.search.SearchState() }
     var daily by remember { mutableStateOf<List<com.lyq2010.leesmusic.ui.catalog.LibrarySong>>(emptyList()) }
-    var openedTitle by remember { mutableStateOf("") }
-    var openedArtist by remember { mutableStateOf("") }
-    var openedYear by remember { mutableStateOf(0) }
-    var openedCoverId by remember { mutableStateOf<String?>(null) }
-    var openedCoverUrl by remember { mutableStateOf<String?>(null) }
-    var openedSongs by remember { mutableStateOf<List<com.lyq2010.leesmusic.ui.catalog.LibrarySong>>(emptyList()) }
+    val opened = remember(cacheNamespace) { AlbumSelectionState() }
     var refreshingDaily by remember { mutableStateOf(false) }
     val appPlayer = remember { AppPlayer(context) }
-    var playRequest by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
     androidx.compose.runtime.DisposableEffect(appPlayer) {
         onDispose { appPlayer.release() }
     }
@@ -129,11 +135,9 @@ fun LeesApp() {
     var sleepRemainingMs by remember { mutableStateOf(0L) }
     var canNext by remember { mutableStateOf(false) }
     var repeatMode by remember { androidx.compose.runtime.mutableIntStateOf(0) }
-    LaunchedEffect(appPlayer) {
-        while (appPlayer.playerOrNull() == null) {
-            kotlinx.coroutines.delay(50)
-        }
-        val player = appPlayer.playerOrNull() ?: return@LaunchedEffect
+    val connectedPlayer = appPlayer.playerOrNull()
+    LaunchedEffect(connectedPlayer) {
+        val player = connectedPlayer ?: return@LaunchedEffect
         currentSong = appPlayer.currentSong()
         nowPlayingTitle = player.currentSongTitle()
         val listener = object : androidx.media3.common.Player.Listener {
@@ -177,10 +181,15 @@ fun LeesApp() {
         }
     }
 
-    LaunchedEffect(Unit) {
-        settings = store.load()
-        savedServers = store.savedServers()
-        ready = true
+    LaunchedEffect(startupAttempt) {
+        startupError = false
+        try {
+            account.restore(store.load(), store.savedServers())
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            startupError = true
+        }
     }
     LaunchedEffect(settings, shelfRevision) {
         val current = settings
@@ -189,7 +198,7 @@ fun LeesApp() {
         frequent = emptyList()
         randomAlbums = emptyList()
         daily = emptyList()
-        openedSongs = emptyList()
+        opened.clear()
         if (current == null || current.kind != ServerKind.Navidrome) return@LaunchedEffect
         val cached = withContext(Dispatchers.IO) { shelfStore.load() }
         if (cached != null && !cached.isEmpty()) {
@@ -249,20 +258,25 @@ fun LeesApp() {
         val current = settings ?: return
         if (songs.isEmpty()) return
         if (appPlayer.playerOrNull() == null) {
+            appPlayer.retryConnection()
             android.widget.Toast.makeText(context, "播放器正在连接，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
             return
         }
         val safeIndex = index.coerceIn(0, songs.lastIndex)
-        val request = ++playRequest
+        val request = account.nextPlayRequest()
         scope.launch {
             val local = withContext(Dispatchers.IO) {
                 try { downloads.list().filter { it.playable }.associate { it.song.id to it.uri!! } }
                 catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
                 catch (_: Exception) { emptyMap() }
             }
-            if (request != playRequest || settings != current) return@launch
+            if (!account.isCurrentPlayRequest(request) || settings != current) return@launch
             val playable = com.lyq2010.leesmusic.data.library.withDownloadedSongs(songs, local)
-            appPlayer.play(SubsonicServer(current.url, current.username, current.password), playable, safeIndex, start, shuffle)
+            val items = withContext(Dispatchers.Default) {
+                appPlayer.mediaItems(SubsonicServer(current.url, current.username, current.password), playable)
+            }
+            if (!account.isCurrentPlayRequest(request) || settings != current) return@launch
+            appPlayer.playPrepared(items, safeIndex, start, shuffle)
             currentSong = playable[safeIndex]
             nowPlayingTitle = playable[safeIndex].title
             isPlaying = start
@@ -272,24 +286,26 @@ fun LeesApp() {
 
     fun openAlbum(album: com.lyq2010.leesmusic.ui.catalog.LibraryAlbum) {
         val current = settings ?: return
+        val request = opened.nextRequest()
+        val fromRoute = nav.currentBackStackEntry?.destination?.route
         scope.launch {
             try {
                 val client = SubsonicClient(libraryHttp)
                 val server = SubsonicServer(current.url, current.username, current.password)
                 val loaded = browseCache.album(album.id) { withContext(Dispatchers.IO) { client.album(server, album.id) } }
-                if (settings != current) return@launch
-                openedTitle = loaded.name.ifBlank { album.name }
-                openedArtist = loaded.artist.ifBlank { album.artist }
-                openedYear = loaded.year
-                openedCoverId = loaded.coverArt ?: album.coverArtId
-                openedCoverUrl = openedCoverId?.let { client.coverArtUrl(server, it) }
-                openedSongs = loaded.song.map { song -> song.copy(
-                    coverArt = song.coverArt ?: openedCoverId, albumId = song.albumId ?: album.id,
-                    album = song.album.ifBlank { openedTitle }).toLibrarySong(client, server) }
+                if (settings != current || !opened.isCurrent(request) || nav.currentBackStackEntry?.destination?.route != fromRoute) return@launch
+                opened.title = loaded.name.ifBlank { album.name }
+                opened.artist = loaded.artist.ifBlank { album.artist }
+                opened.year = loaded.year
+                opened.coverId = loaded.coverArt ?: album.coverArtId
+                opened.coverUrl = opened.coverId?.let { client.coverArtUrl(server, it) }
+                opened.songs = loaded.song.map { song -> song.copy(
+                    coverArt = song.coverArt ?: opened.coverId, albumId = song.albumId ?: album.id,
+                    album = song.album.ifBlank { opened.title }).toLibrarySong(client, server) }
                 nav.navigate(Routes.Album)
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled
             } catch (_: Exception) {
-                if (settings == current) android.widget.Toast.makeText(context, "专辑读取失败，请重试", android.widget.Toast.LENGTH_LONG).show()
+                if (settings == current && opened.isCurrent(request)) android.widget.Toast.makeText(context, "专辑读取失败，请重试", android.widget.Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -306,7 +322,30 @@ fun LeesApp() {
             }
         }
     }
-    if (!ready) return
+    if (!ready) {
+        if (startupError) {
+            androidx.compose.foundation.layout.Column(Modifier.fillMaxSize().padding(24.dp)) {
+                androidx.compose.material3.Text("无法读取本地服务器配置。可重试，或将原配置归档到应用内部后重新配置账号。")
+                androidx.compose.material3.Button(onClick = { startupAttempt++ }) {
+                    androidx.compose.material3.Text("重试")
+                }
+                androidx.compose.material3.Button(onClick = {
+                    scope.launch {
+                        recoveryError = try {
+                            !withContext(Dispatchers.IO) { store.archiveUnreadableSettings() }
+                        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            true
+                        }
+                        if (!recoveryError) startupAttempt++
+                    }
+                }) { androidx.compose.material3.Text("归档原配置并重新登录") }
+                if (recoveryError) androidx.compose.material3.Text("归档失败，原配置未更改。")
+            }
+        }
+        return
+    }
 
     fun connect(next: ServerSettings) {
         scope.launch {
@@ -326,19 +365,21 @@ fun LeesApp() {
                 }.getOrElse { it.message ?: "连接失败" }
             }
             if (!status.startsWith("已连接")) { busy = false; return@launch }
-            if (settings?.let { com.lyq2010.leesmusic.data.library.serverCacheIdentity(it.url, it.username, it.kind.name) } !=
+            val previous = settings
+            if (previous?.let { com.lyq2010.leesmusic.data.library.serverCacheIdentity(it.url, it.username, it.kind.name) } !=
                 com.lyq2010.leesmusic.data.library.serverCacheIdentity(next.url, next.username, next.kind.name)) {
                 appPlayer.playerOrNull()?.apply { stop(); clearMediaItems() }
                 currentSong = null
                 nowPlayingTitle = ""
+            } else if (previous.password != next.password) {
+                appPlayer.refreshCredentials(SubsonicServer(next.url, next.username, next.password))
             }
+            account.invalidatePlayRequests()
             savedServers = store.savedServers()
             settings = next
             busy = false
-            if (status.startsWith("已连接")) {
-                nav.navigate(Routes.Home) {
-                    popUpTo(Routes.Welcome) { inclusive = true }
-                }
+            nav.navigate(Routes.Home) {
+                popUpTo(Routes.Welcome) { inclusive = true }
             }
         }
     }
@@ -359,10 +400,13 @@ fun LeesApp() {
                             revision = libraryRevision, downloads = downloads, cache = browseCache, onAlbum = ::openAlbum, onRefreshShelf = { browseCache.invalidate(); shelfRevision++ },
                             onPlay = { songs, index, start -> playSongs(songs, index, start) },
                             onRandomPlay = { songs -> playSongs(songs, songs.indices.random(), start = true, shuffle = true) },
-                            onMore = { actionSong = it }, onServer = { status = ""; nav.navigate(Routes.Servers) })
+                            onMore = { showSongActions(it) },
+                            onPlaylistSongMore = { song, id, index -> showSongActions(song, id, index) },
+                            homeRequest = homeRequest, onServer = { status = ""; nav.navigate(Routes.Servers) })
                     }
                 },
                 onOpenQueue = { showQueue = true },
+                onHomeClick = { homeRequest++ },
                 newest = newest,
                 recent = recent,
                 frequent = frequent,
@@ -371,7 +415,7 @@ fun LeesApp() {
                     com.lyq2010.leesmusic.ui.search.SearchScreen(searchState,
                         settings?.takeIf { it.kind == ServerKind.Navidrome }?.let { SubsonicServer(it.url, it.username, it.password) },
                         libraryHttp, browseCache, downloads, ::openAlbum,
-                        { songs, index, start -> playSongs(songs, index, start) }, { actionSong = it },
+                        { songs, index, start -> playSongs(songs, index, start) }, { showSongActions(it) },
                         { status = ""; nav.navigate(Routes.Servers) })
                 },
                 settingsContent = {
@@ -379,7 +423,7 @@ fun LeesApp() {
                         settings?.takeIf { it.kind == ServerKind.Navidrome }?.let { SubsonicServer(it.url, it.username, it.password) },
                         libraryHttp, downloads, browseCache,
                         { status = ""; nav.navigate(Routes.Servers) },
-                        { songs, index, start -> playSongs(songs, index, start) }, { actionSong = it })
+                        { songs, index, start -> playSongs(songs, index, start) }, { showSongActions(it) })
                 },
                 libraryMessage = libraryMessage,
                 http = libraryHttp,
@@ -415,7 +459,7 @@ fun LeesApp() {
         composable(Routes.Daily) {
             DailyPlaylistScreen(
                 songs = daily,
-                onMore = { actionSong = it },
+                onMore = { showSongActions(it) },
                 http = libraryHttp,
                 onBack = { nav.popBackStack() },
                 onPlay = { index -> playSongs(daily, index) },
@@ -425,18 +469,18 @@ fun LeesApp() {
         }
         composable(Routes.Album) {
             com.lyq2010.leesmusic.ui.album.AlbumScreen(
-                title = openedTitle,
-                artist = openedArtist,
-                year = openedYear,
-                coverArtId = openedCoverId,
-                coverUrl = openedCoverUrl,
-                songs = openedSongs,
-                onMore = { actionSong = it },
+                title = opened.title,
+                artist = opened.artist,
+                year = opened.year,
+                coverArtId = opened.coverId,
+                coverUrl = opened.coverUrl,
+                songs = opened.songs,
+                onMore = { showSongActions(it) },
                 http = libraryHttp,
                 onBack = { nav.popBackStack() },
-                onPlayInOrder = { playSongs(openedSongs, 0, start = true, openPlayer = false) },
-                onShuffle = { playSongs(openedSongs, openedSongs.indices.randomOrNull() ?: 0, start = true, openPlayer = false, shuffle = true) },
-                onPlay = { index -> playSongs(openedSongs, index) },
+                onPlayInOrder = { playSongs(opened.songs, 0, start = true, openPlayer = false) },
+                onShuffle = { playSongs(opened.songs, opened.songs.indices.randomOrNull() ?: 0, start = true, openPlayer = false, shuffle = true) },
+                onPlay = { index -> playSongs(opened.songs, index) },
             )
         }
         dialog(Routes.Player, dialogProperties = DialogProperties(
@@ -467,7 +511,7 @@ fun LeesApp() {
                 onOpenLyrics = { showLyrics = true },
                 shuffle = shuffle, buffering = buffering, canPrevious = canPrevious, canNext = canNext,
                 onShuffle = { appPlayer.playerOrNull()?.let { it.shuffleModeEnabled = !it.shuffleModeEnabled } },
-                onQueue = { showQueue = true }, onMore = { actionSong = currentSong },
+                onQueue = { showQueue = true }, onMore = { currentSong?.let { showSongActions(it) } },
                 sleepRemainingMs = sleepRemainingMs, onSleepTimer = { showSleepTimer = true },
             )
             else LyricsScreen(
@@ -491,7 +535,7 @@ fun LeesApp() {
                 onDismiss = { nav.popBackStack() },
                 shuffle = shuffle, buffering = buffering, canPrevious = canPrevious, canNext = canNext,
                 onShuffle = { appPlayer.playerOrNull()?.let { it.shuffleModeEnabled = !it.shuffleModeEnabled } },
-                onQueue = { showQueue = true }, onMore = { actionSong = currentSong },
+                onQueue = { showQueue = true }, onMore = { currentSong?.let { showSongActions(it) } },
                 sleepRemainingMs = sleepRemainingMs, onSleepTimer = { showSleepTimer = true },
             )
         }
@@ -538,6 +582,7 @@ fun LeesApp() {
                     },
                     onChanged = { libraryRevision++ },
                     http = libraryHttp,
+                    playlistId = actionPlaylistId, playlistIndex = actionPlaylistIndex.takeIf { it >= 0 },
                     onAlbum = selected.albumId?.takeIf { it.isNotBlank() }?.let { id -> {
                         openAlbum(com.lyq2010.leesmusic.ui.catalog.LibraryAlbum(id, selected.album, selected.artist, selected.coverArtId, selected.coverUrl))
                     } },

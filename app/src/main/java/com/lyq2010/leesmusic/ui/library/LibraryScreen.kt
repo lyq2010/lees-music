@@ -24,7 +24,9 @@ import okhttp3.OkHttpClient
 fun LibraryScreen(label: String, username: String, newest: List<LibraryAlbum>, overview: LibraryOverview?,
     loading: Boolean, error: String?, http: OkHttpClient, onRetry: () -> Unit,
     onOpen: (LibraryDestination) -> Unit, onAlbum: (LibraryAlbum) -> Unit,
-    onPlayFavorites: () -> Unit, onCreate: () -> Unit, onServer: () -> Unit) {
+    onPlayFavorites: () -> Unit, onCreate: () -> Unit, onServer: () -> Unit,
+    onDeletePlaylist: (com.lyq2010.leesmusic.data.api.MusicPlaylist) -> Unit = {},
+    onSharePlaylist: (com.lyq2010.leesmusic.data.api.MusicPlaylist) -> Unit = {}, cachedAt: Long = 0L) {
     var shared by rememberSaveable { mutableStateOf(false) }
     val playlists = overview?.playlists.orEmpty().filter { if (shared) it.owner != username else it.owner == username }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
@@ -38,6 +40,7 @@ fun LibraryScreen(label: String, username: String, newest: List<LibraryAlbum>, o
                 IconButton(onClick = onServer) { Icon(Icons.Default.Dns, "服务器设置", tint = ShellAccent) }
             }
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
+            CacheNotice(cachedAt)
             error?.let { Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(it, color = ShellMuted, modifier = Modifier.weight(1f))
                 TextButton(onClick = onRetry) { Text("重试") }
@@ -81,6 +84,12 @@ fun LibraryScreen(label: String, username: String, newest: List<LibraryAlbum>, o
         items(playlists, key = { it.id }) { playlist ->
             ListItem(headlineContent = { Text(playlist.name) }, supportingContent = { Text("${playlist.songCount} 首歌曲 · ${playlist.owner}") },
                 leadingContent = { Icon(Icons.Default.QueueMusic, null, tint = ShellAccent) },
+                trailingContent = { Row {
+                    if (!shared) {
+                        IconButton(onClick = { onSharePlaylist(playlist) }) { Icon(Icons.Default.Share, "分享歌单${playlist.name}", tint = ShellAccent) }
+                        IconButton(onClick = { onDeletePlaylist(playlist) }) { Icon(Icons.Default.DeleteOutline, "删除歌单${playlist.name}", tint = ShellMuted) }
+                    }
+                } },
                 colors = ListItemDefaults.colors(containerColor = ShellBg, headlineColor = ShellText, supportingColor = ShellMuted),
                 modifier = Modifier.clickable { onOpen(LibraryDestination("playlist", playlist.name, playlist.id)) })
         }

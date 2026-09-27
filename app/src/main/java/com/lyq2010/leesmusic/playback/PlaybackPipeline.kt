@@ -9,6 +9,7 @@ import androidx.media3.datasource.okhttp.OkHttpDataSource
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import java.util.concurrent.Executors
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
@@ -18,6 +19,7 @@ internal class PlaybackPipeline(
     private val policy: PlaybackNetworkPolicy,
     private val cache: Cache = PlaybackCache.get(context),
     private val canFetch: () -> Boolean = { policy.online() && !policy.blocked() },
+    private val executor: ExecutorService = Executors.newSingleThreadExecutor { task -> Thread(task, "music-prefetch").apply { isDaemon = true } },
 ) {
     private val preferences = com.lyq2010.leesmusic.data.settings.PlaybackPreferences(context)
     private val client = OkHttpClient.Builder().protocols(listOf(Protocol.HTTP_1_1))
@@ -25,7 +27,6 @@ internal class PlaybackPipeline(
         .retryOnConnectionFailure(true).build()
     private val prefetchClient = client.newBuilder().dispatcher(okhttp3.Dispatcher()).build()
     private val connections = PlaybackConnections(client, prefetchClient)
-    private val executor = Executors.newSingleThreadExecutor { task -> Thread(task, "music-prefetch").apply { isDaemon = true } }
     private val generation = AtomicLong()
     @Volatile private var writer: CacheWriter? = null
     private var requested = emptyList<String>()

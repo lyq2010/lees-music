@@ -21,6 +21,7 @@ internal fun ActionItem(label: String, enabled: Boolean, detail: String? = null,
         "收藏歌曲" -> Icons.Default.FavoriteBorder
         "取消收藏" -> Icons.Default.Favorite
         "加入歌单" -> Icons.Default.PlaylistAdd
+        "从歌单移除" -> Icons.Default.PlaylistRemove
         "下载原音质", "重新下载" -> Icons.Default.Download
         "已下载" -> Icons.Default.DownloadDone
         "查看专辑" -> Icons.Default.Album

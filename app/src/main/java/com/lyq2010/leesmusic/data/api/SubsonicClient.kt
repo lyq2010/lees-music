@@ -4,6 +4,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.util.concurrent.TimeUnit
 
 data class SubsonicServer(
     val baseUrl: String,
@@ -15,9 +16,9 @@ class SubsonicClient(
     private val http: OkHttpClient = OkHttpClient(),
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
-    fun ping(server: SubsonicServer): SubsonicBody = call(server, "ping")
+    suspend fun ping(server: SubsonicServer): SubsonicBody = call(server, "ping")
 
-    fun lyrics(server: SubsonicServer, songId: String, artist: String, title: String): StructuredLyrics? {
+    suspend fun lyrics(server: SubsonicServer, songId: String, artist: String, title: String): StructuredLyrics? {
         val candidates = try {
             call(server, "getLyricsBySongId", mapOf("id" to songId)).lyricsList?.structuredLyrics.orEmpty()
         } catch (error: SubsonicException) {
@@ -34,49 +35,59 @@ class SubsonicClient(
         return plain?.let { parseLyricsText(it) }
     }
 
-    fun album(server: SubsonicServer, id: String): Album =
+    suspend fun album(server: SubsonicServer, id: String): Album =
         call(server, "getAlbum", mapOf("id" to id)).album ?: Album(id = id, name = "")
 
-    fun albums(server: SubsonicServer, type: String, offset: Int = 0, size: Int = 20): List<Album> =
+    suspend fun albums(server: SubsonicServer, type: String, offset: Int = 0, size: Int = 20): List<Album> =
         call(server, "getAlbumList2", mapOf("type" to type, "size" to size.toString(), "offset" to offset.toString())).albumList2?.album.orEmpty()
 
-    fun songs(server: SubsonicServer, offset: Int, size: Int = 200): List<Song> =
+    suspend fun songs(server: SubsonicServer, offset: Int, size: Int = 200): List<Song> =
         call(server, "search3", mapOf("query" to "", "songCount" to size.toString(), "songOffset" to offset.toString(),
             "albumCount" to "0", "artistCount" to "0")).searchResult3?.song.orEmpty()
 
-    fun artists(server: SubsonicServer): List<Artist> =
+    suspend fun artists(server: SubsonicServer): List<Artist> =
         call(server, "getArtists").artists?.index.orEmpty().flatMap { it.artist }
 
-    fun artist(server: SubsonicServer, id: String): Artist =
+    suspend fun artist(server: SubsonicServer, id: String): Artist =
         call(server, "getArtist", mapOf("id" to id)).artist ?: throw SubsonicException(0, "艺术家不存在")
 
-    fun favorites(server: SubsonicServer): List<Song> = call(server, "getStarred2").starred2?.song.orEmpty()
-    fun setArtistFavorite(server: SubsonicServer, id: String, favorite: Boolean) {
+    suspend fun favorites(server: SubsonicServer): List<Song> = call(server, "getStarred2").starred2?.song.orEmpty()
+    suspend fun setArtistFavorite(server: SubsonicServer, id: String, favorite: Boolean) {
         call(server, if (favorite) "star" else "unstar", mapOf("artistId" to id))
     }
-    fun setFavorite(server: SubsonicServer, id: String, favorite: Boolean) {
+    suspend fun setFavorite(server: SubsonicServer, id: String, favorite: Boolean) {
         call(server, if (favorite) "star" else "unstar", mapOf("id" to id))
     }
-    fun playlists(server: SubsonicServer): List<MusicPlaylist> = call(server, "getPlaylists").playlists?.playlist.orEmpty()
-    fun playlist(server: SubsonicServer, id: String): MusicPlaylist =
+    suspend fun playlists(server: SubsonicServer): List<MusicPlaylist> = call(server, "getPlaylists").playlists?.playlist.orEmpty()
+    suspend fun playlist(server: SubsonicServer, id: String): MusicPlaylist =
         call(server, "getPlaylist", mapOf("id" to id)).playlist ?: throw SubsonicException(0, "歌单不存在")
-    fun createPlaylist(server: SubsonicServer, name: String) {
+    suspend fun createPlaylist(server: SubsonicServer, name: String) {
         require(name.isNotBlank())
         call(server, "createPlaylist", mapOf("name" to name.trim()))
     }
-    fun addToPlaylist(server: SubsonicServer, playlistId: String, songId: String) {
+    suspend fun addToPlaylist(server: SubsonicServer, playlistId: String, songId: String) {
         call(server, "updatePlaylist", mapOf("playlistId" to playlistId, "songIdToAdd" to songId))
     }
+    suspend fun removeFromPlaylist(server: SubsonicServer, playlistId: String, songIndex: Int) {
+        require(songIndex >= 0)
+        call(server, "updatePlaylist", mapOf("playlistId" to playlistId, "songIndexToRemove" to songIndex.toString()))
+    }
+    suspend fun deletePlaylist(server: SubsonicServer, playlistId: String) {
+        call(server, "deletePlaylist", mapOf("id" to playlistId))
+    }
+    suspend fun sharePlaylist(server: SubsonicServer, playlistId: String): String =
+        call(server, "createShare", mapOf("id" to playlistId)).shares?.share?.firstOrNull()?.url
+            ?.takeIf { it.isNotBlank() } ?: throw SubsonicException(0, "服务器未返回分享链接")
     fun downloadUrl(server: SubsonicServer, id: String): String = authenticatedUrl(server, "download", mapOf("id" to id))
 
-    fun randomSongs(server: SubsonicServer, size: Int = 50): List<Song> =
+    suspend fun randomSongs(server: SubsonicServer, size: Int = 50): List<Song> =
         call(server, "getRandomSongs", mapOf("size" to size.toString())).randomSongs?.song.orEmpty()
 
-    fun search(server: SubsonicServer, query: String): SearchResult =
+    suspend fun search(server: SubsonicServer, query: String): SearchResult =
         call(server, "search3", mapOf("query" to query, "songCount" to "20", "albumCount" to "12", "artistCount" to "12"))
             .searchResult3 ?: SearchResult()
 
-    fun searchPage(server: SubsonicServer, query: String, kind: String, offset: Int, size: Int = 40): SearchResult {
+    suspend fun searchPage(server: SubsonicServer, query: String, kind: String, offset: Int, size: Int = 40): SearchResult {
         require(kind in setOf("song", "album", "artist"))
         return call(server, "search3", mapOf("query" to query,
             "songCount" to if (kind == "song") size.toString() else "0",
@@ -119,7 +130,7 @@ class SubsonicClient(
             .toString()
     }
 
-    private fun call(server: SubsonicServer, view: String, extra: Map<String, String> = emptyMap()): SubsonicBody {
+    private suspend fun call(server: SubsonicServer, view: String, extra: Map<String, String> = emptyMap()): SubsonicBody {
         val salt = SubsonicAuth.salt()
         val url = server.baseUrl.trimEnd('/').toHttpUrl().newBuilder()
             .addPathSegments("rest/$view.view")
@@ -131,12 +142,13 @@ class SubsonicClient(
             .addQueryParameter("f", "json")
             .apply { extra.forEach { (key, value) -> addQueryParameter(key, value) } }
             .build()
-        val response = http.newCall(Request.Builder().url(url).build()).execute()
-        val body = response.body.string()
-        if (!response.isSuccessful) {
+        val call = http.newCall(Request.Builder().url(url).build())
+        call.timeout().timeout(15, TimeUnit.SECONDS)
+        val response = call.awaitText()
+        if (response.code !in 200..299) {
             throw SubsonicException(response.code, "HTTP ${response.code}")
         }
-        val parsed = json.decodeFromString(SubsonicEnvelope.serializer(), body).response
+        val parsed = json.decodeFromString(SubsonicEnvelope.serializer(), response.body).response
         if (parsed.status != "ok") {
             val error = parsed.error
             throw SubsonicException(error?.code ?: 0, error?.message ?: "Subsonic 请求失败")

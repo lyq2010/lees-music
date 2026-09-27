@@ -14,6 +14,7 @@ import org.junit.Test
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.UUID
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -33,8 +34,14 @@ class PlaybackCacheTest {
     private fun withPipeline(test: (PlaybackPipeline, MockWebServer) -> Unit) {
         val server = MockWebServer(); server.start()
         val cache = SimpleCache(File(context.cacheDir, "reliability-test-${UUID.randomUUID()}"), NoOpCacheEvictor(), StandaloneDatabaseProvider(context))
-        val pipeline = PlaybackPipeline(context, PlaybackNetworkPolicy(context), cache, { true })
-        try { test(pipeline, server) } finally { pipeline.close(); server.shutdown(); cache.release() }
+        val executor = Executors.newSingleThreadExecutor()
+        val pipeline = PlaybackPipeline(context, PlaybackNetworkPolicy(context), cache, { true }, executor)
+        try { test(pipeline, server) } finally {
+            pipeline.close()
+            check(executor.awaitTermination(10, TimeUnit.SECONDS)) { "Prefetch worker did not stop" }
+            server.shutdown()
+            cache.release()
+        }
     }
     private fun rangeServer(server: MockWebServer, rejectRange: Boolean = false) {
         val first = AtomicBoolean(true); val reject = AtomicBoolean(rejectRange)

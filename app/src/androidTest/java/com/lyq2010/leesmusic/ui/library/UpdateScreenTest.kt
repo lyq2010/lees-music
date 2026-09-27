@@ -19,9 +19,9 @@ class UpdateScreenTest {
         compose.onNodeWithText("检查更新", substring = false).assertIsDisplayed()
         compose.onNodeWithText("本次更新").performScrollTo().assertIsDisplayed()
         compose.waitUntil(5000) {
-            compose.onAllNodesWithText("${BuildConfig.VERSION_NAME} · 公开测试版").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithText("${BuildConfig.VERSION_NAME} · 正式版").fetchSemanticsNodes().isNotEmpty()
         }
-        compose.onNodeWithText("${BuildConfig.VERSION_NAME} · 公开测试版").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("${BuildConfig.VERSION_NAME} · 正式版").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("0.1.0 · 公开测试版").assertDoesNotExist()
     }
     @Test fun availableReleaseReplacesInstalledNotes() {

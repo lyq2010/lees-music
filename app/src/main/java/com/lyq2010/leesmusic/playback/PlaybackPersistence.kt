@@ -25,6 +25,9 @@ internal class PlaybackPersistence(private val context: Context, private val pla
     private val writes = Channel<PlaybackSnapshot>(Channel.CONFLATED)
     private val json = Json { ignoreUnknownKeys = true }
     private var revision = 0
+    private var savedRevision = -1
+    private var savedNamespace: String? = null
+    private var savedSongs = emptyList<LibrarySong>()
     private val ticker: Job
     private val restore: Job
     private val listener = object : Player.Listener {
@@ -67,7 +70,9 @@ internal class PlaybackPersistence(private val context: Context, private val pla
             if (restored != null && revision == expected && player.mediaItemCount == 0) {
                 val (snapshot, server, songs) = restored
                 player.playWhenReady = false
-                player.setMediaItems(songs.map { playbackMediaItem(server, it, PlaybackPreferences(context).quality.bitRate) },
+                val client = SubsonicClient()
+                val bitRate = PlaybackPreferences(context).quality.bitRate
+                player.setMediaItems(songs.map { playbackMediaItem(server, it, bitRate, client) },
                     snapshot.index, snapshot.position.coerceAtLeast(0))
                 player.repeatMode = snapshot.repeat.coerceIn(Player.REPEAT_MODE_OFF, Player.REPEAT_MODE_ALL)
                 player.shuffleModeEnabled = snapshot.shuffle
@@ -78,8 +83,15 @@ internal class PlaybackPersistence(private val context: Context, private val pla
     fun save() {
         if (player.mediaItemCount == 0) return
         val namespace = player.currentMediaItem?.mediaMetadata?.extras?.getString("namespace") ?: return
-        val songs = (0 until player.mediaItemCount).map { mediaItemSong(player.getMediaItemAt(it)).copy(coverUrl = null, localUri = null) }
-        writes.trySend(PlaybackSnapshot(namespace, songs, player.currentMediaItemIndex, player.currentPosition.coerceAtLeast(0), player.repeatMode, player.shuffleModeEnabled))
+        if (savedRevision != revision || savedNamespace != namespace) {
+            savedSongs = (0 until player.mediaItemCount).map {
+                mediaItemSong(player.getMediaItemAt(it)).copy(coverUrl = null, localUri = null)
+            }
+            savedRevision = revision
+            savedNamespace = namespace
+        }
+        writes.trySend(PlaybackSnapshot(namespace, savedSongs, player.currentMediaItemIndex,
+            player.currentPosition.coerceAtLeast(0), player.repeatMode, player.shuffleModeEnabled))
     }
     fun close() {
         save()

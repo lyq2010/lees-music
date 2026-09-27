@@ -5,6 +5,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class LibraryOverviewStateTest {
+    @Test fun restoredOverviewShowsCacheTimeUntilRefresh() = runBlocking {
+        val cached = LibraryOverview(emptyList(), emptyList())
+        val state = LibraryOverviewState({ cached }, {}, { 1234L })
+        state.load(0, 0) { error("已命中缓存") }
+        assertEquals(1234L, state.cacheSavedAt)
+        state.load(0, 0, force = true) { cached }
+        assertEquals(0L, state.cacheSavedAt)
+    }
     @Test fun emptyOverviewIsCachedAndOnlyInvalidationOrMutationReloads() = runBlocking {
         val cache = LibraryBrowseCache()
         var calls = 0

@@ -22,7 +22,8 @@ import kotlinx.coroutines.*
 fun SongActions(song: LibrarySong, server: SubsonicServer, client: SubsonicClient, downloads: LibraryDownloads,
     onDismiss: () -> Unit, onPlay: () -> Unit, onEnqueue: (LibrarySong, Boolean) -> Boolean,
     onChanged: () -> Unit, onMessage: (String) -> Unit,
-    onAlbum: (() -> Unit)? = null, http: okhttp3.OkHttpClient = remember { okhttp3.OkHttpClient() }) {
+    onAlbum: (() -> Unit)? = null, http: okhttp3.OkHttpClient = remember { okhttp3.OkHttpClient() },
+    playlistId: String? = null, playlistIndex: Int? = null) {
     val context = LocalContext.current
     var download by remember(song.id) { mutableStateOf<com.lyq2010.leesmusic.data.library.LibraryDownload?>(null) }
     var downloadLoaded by remember(song.id) { mutableStateOf(false) }
@@ -44,7 +45,7 @@ fun SongActions(song: LibrarySong, server: SubsonicServer, client: SubsonicClien
         catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { error = "收藏状态读取失败，可重试" }
     }
-    fun operation(success: String, action: () -> Unit) {
+    fun operation(success: String, action: suspend () -> Unit) {
         if (busy) return
         scope.launch {
             busy = true
@@ -55,7 +56,7 @@ fun SongActions(song: LibrarySong, server: SubsonicServer, client: SubsonicClien
                 onMessage(success)
                 onDismiss()
             } catch (cancelled: CancellationException) { throw cancelled
-            } catch (_: Exception) { error = "操作失败，未确认成功，请重试" }
+            } catch (failure: Exception) { error = if (failure is IllegalStateException) failure.message else "操作失败，未确认成功，请重试" }
             finally { busy = false }
         }
     }
@@ -86,9 +87,27 @@ fun SongActions(song: LibrarySong, server: SubsonicServer, client: SubsonicClien
                 }
             } else if (mode == "playlists") {
                 item { TextButton(enabled = !busy, onClick = { mode = "menu" }) { Text("返回操作菜单") } }
+                if (playlists.isNotEmpty()) item { Text("点击歌单：已有歌曲则移除，否则加入", color = ShellMuted, modifier = Modifier.padding(12.dp)) }
                 if (playlists.isEmpty()) item { Text("还没有自己的歌单，请先在首页新建", color = ShellMuted, modifier = Modifier.padding(12.dp)) }
                 items(playlists, key = { it.id }) { playlist ->
-                    ActionItem(playlist.name, !busy) { operation("已加入 ${playlist.name}") { client.addToPlaylist(server, playlist.id, song.id) } }
+                    ActionItem(playlist.name, !busy) {
+                        if (busy) return@ActionItem
+                        scope.launch {
+                            busy = true
+                            error = null
+                            try {
+                                val removed = withContext(Dispatchers.IO) {
+                                    val index = client.playlist(server, playlist.id).entry.indexOfFirst { it.id == song.id }
+                                    if (index >= 0) client.removeFromPlaylist(server, playlist.id, index)
+                                    else client.addToPlaylist(server, playlist.id, song.id)
+                                    index >= 0
+                                }
+                                onChanged(); onMessage(if (removed) "已从 ${playlist.name} 移除" else "已加入 ${playlist.name}"); onDismiss()
+                            } catch (cancelled: CancellationException) { throw cancelled
+                            } catch (_: Exception) { error = "歌单修改失败，请重试" }
+                            finally { busy = false }
+                        }
+                    }
                 }
             } else {
                 item { Text("播放", color = ShellAccent, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(16.dp, 8.dp)) }
@@ -111,6 +130,16 @@ fun SongActions(song: LibrarySong, server: SubsonicServer, client: SubsonicClien
                         finally { busy = false }
                     }
                 } }
+                if (playlistId != null && playlistIndex != null) item {
+                    ActionItem("从歌单移除", !busy) {
+                        operation("已从歌单移除") {
+                            check(client.playlist(server, playlistId).entry.getOrNull(playlistIndex)?.id == song.id) {
+                                "歌单已变化，请刷新后重试"
+                            }
+                            client.removeFromPlaylist(server, playlistId, playlistIndex)
+                        }
+                    }
+                }
                 item { ActionItem(if (download?.playable == true) "已下载" else if (download?.status == android.app.DownloadManager.STATUS_FAILED) "重新下载" else "下载原音质",
                     !busy && download?.playable != true && download?.status !in listOf(android.app.DownloadManager.STATUS_PENDING, android.app.DownloadManager.STATUS_RUNNING, android.app.DownloadManager.STATUS_PAUSED),
                     detail = if (downloadLoaded) download?.label ?: "离线播放" else "正在读取下载状态") {
@@ -126,7 +155,7 @@ fun SongActions(song: LibrarySong, server: SubsonicServer, client: SubsonicClien
                 } }
                 item { HorizontalDivider(color = ShellBg, modifier = Modifier.padding(vertical = 8.dp)) }
                 if (onAlbum != null) item { ActionItem("查看专辑", !busy) { onDismiss(); onAlbum() } }
-                item { ActionItem("分享歌曲信息", !busy, "") {
+                item { ActionItem("分享歌曲信息", !busy) {
                     val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(android.content.Intent.EXTRA_TEXT, listOf(song.title, song.artist, song.album).filter { it.isNotBlank() }.joinToString(" · "))

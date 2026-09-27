@@ -6,7 +6,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 
 /** Keep requesting pages until the server is exhausted, never label the first page as the whole library. */
-suspend fun <T> readLibraryPages(id: (T) -> String, fetch: (Int) -> List<T>): List<T> {
+suspend fun <T> readLibraryPages(id: (T) -> String, fetch: suspend (Int) -> List<T>): List<T> {
     val result = linkedMapOf<String, T>()
     var offset = 0
     while (true) {

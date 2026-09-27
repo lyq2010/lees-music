@@ -33,6 +33,7 @@ import com.lyq2010.leesmusic.data.settings.ServerEndpoint
 import com.lyq2010.leesmusic.data.settings.ServerKind
 import com.lyq2010.leesmusic.data.settings.ServerSettings
 import com.lyq2010.leesmusic.data.settings.parseEndpoint
+import com.lyq2010.leesmusic.data.settings.endpointFromHostInput
 import com.lyq2010.leesmusic.data.settings.toUrl
 import com.lyq2010.leesmusic.ui.shell.ShellBg
 import com.lyq2010.leesmusic.ui.shell.ShellMuted
@@ -83,7 +84,13 @@ fun LoginScreen(
             }
         }
         Text("连接设置", color = ShellMuted, modifier = Modifier.padding(top = 8.dp))
-        EndpointFields(host, port, path, https, { host = it }, { port = it }, { path = it }, { https = it })
+        EndpointFields(host, port, path, https, {
+            val endpoint = endpointFromHostInput(it, ServerEndpoint(host, port, path, https))
+            host = endpoint.host
+            port = endpoint.port
+            path = endpoint.path
+            https = endpoint.https
+        }, { port = it }, { path = it }, { https = it })
         Text("登录信息", color = ShellMuted, modifier = Modifier.padding(top = 16.dp))
         Field("用户名", username, { username = it })
         Field("密码", password, { password = it }, password = true)
@@ -106,7 +113,7 @@ private fun EndpointFields(
 ) {
     OutlinedTextField(
         value = host,
-        onValueChange = { onHost(it.removePrefix("https://").removePrefix("http://").substringBefore("/")) },
+        onValueChange = onHost,
         label = { Text("主机地址") },
         prefix = { Text(if (https) "https://" else "http://") },
         singleLine = true,

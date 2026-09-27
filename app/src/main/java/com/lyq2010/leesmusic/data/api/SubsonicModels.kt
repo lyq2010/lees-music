@@ -24,6 +24,7 @@ data class SubsonicBody(
     val starred2: SearchResult? = null,
     val playlists: Playlists? = null,
     val playlist: MusicPlaylist? = null,
+    val shares: Shares? = null,
 )
 
 @Serializable
@@ -91,6 +92,8 @@ data class Artist(
 @Serializable data class ArtistIndex(val index: List<ArtistGroup> = emptyList())
 @Serializable data class ArtistGroup(val name: String = "", val artist: List<Artist> = emptyList())
 @Serializable data class Playlists(val playlist: List<MusicPlaylist> = emptyList())
+@Serializable data class Shares(val share: List<MusicShare> = emptyList())
+@Serializable data class MusicShare(val id: String, val url: String)
 @Serializable data class MusicPlaylist(
     val id: String, val name: String, val owner: String = "",
     val public: Boolean = false, val songCount: Int = 0, val coverArt: String? = null,

@@ -7,8 +7,8 @@ import com.lyq2010.leesmusic.data.api.SubsonicClient
 import com.lyq2010.leesmusic.data.api.SubsonicServer
 import com.lyq2010.leesmusic.ui.catalog.LibrarySong
 
-internal fun playbackMediaItem(server: SubsonicServer, song: LibrarySong, bitRate: Int): MediaItem {
-        val client = SubsonicClient()
+internal fun playbackMediaItem(server: SubsonicServer, song: LibrarySong, bitRate: Int,
+                               client: SubsonicClient = SubsonicClient()): MediaItem {
         return MediaItem.Builder()
                 .setMediaId(song.id)
                 .setUri(song.localUri ?: client.streamUrl(server, song.id, bitRate))

@@ -6,14 +6,15 @@ import kotlinx.coroutines.CancellationException
 
 /** Owned above navigation and tabs, recreated whenever the configured account changes. */
 class LibraryBrowseCache(private val disk: com.lyq2010.leesmusic.data.library.LibraryDiskCache? = null) {
-    val overview = LibraryOverviewState({ disk?.overview() }, { disk?.saveOverview(it) })
+    val overview = LibraryOverviewState({ disk?.overview() }, { disk?.saveOverview(it) }, { disk?.overviewUpdatedAt() ?: 0L })
     private val pages = mutableMapOf<Pair<String, String>, LibraryPageState>()
     private val albums = mutableMapOf<String, Pair<Int, com.lyq2010.leesmusic.data.api.Album>>()
     var generation by mutableIntStateOf(0)
         private set
 
     fun page(target: LibraryDestination): LibraryPageState =
-        pages.getOrPut(target.kind to target.id) { LibraryPageState({ disk?.page(target) }, { disk?.save(target, it) }) }
+        pages.getOrPut(target.kind to target.id) { LibraryPageState({ disk?.page(target) }, { disk?.save(target, it) },
+            { disk?.updatedAt(target) ?: 0L }) }
 
     fun invalidate() { generation++ }
 
@@ -31,7 +32,7 @@ class LibraryBrowseCache(private val disk: com.lyq2010.leesmusic.data.library.Li
 }
 
 class LibraryPageState(private val restore: suspend () -> LibraryPage? = { null },
-    private val persist: suspend (LibraryPage) -> Unit = {}) {
+    private val persist: suspend (LibraryPage) -> Unit = {}, private val restoredAt: suspend () -> Long = { 0L }) {
     var data by mutableStateOf<LibraryPage?>(null)
         private set
     var filter by mutableStateOf("")
@@ -39,6 +40,9 @@ class LibraryPageState(private val restore: suspend () -> LibraryPage? = { null 
     val grid = androidx.compose.foundation.lazy.grid.LazyGridState()
     var artistGrid by mutableStateOf(true)
     var artistSort by mutableIntStateOf(0)
+    var sort by mutableIntStateOf(0)
+    var cacheSavedAt by mutableLongStateOf(0L)
+        private set
     var favoritesOnly by mutableStateOf(false)
     fun updateArtist(id: String, favorite: Boolean) {
         data = data?.let { page -> page.copy(artists = page.artists.map {
@@ -60,9 +64,11 @@ class LibraryPageState(private val restore: suspend () -> LibraryPage? = { null 
         error = null
         try {
             val cached = if (!force && data == null && generation == 0 && revision == 0) restore() else null
+            val savedAt = if (cached != null) restoredAt() else 0L
             val result = cached ?: fetch()
             if (current == request) {
                 data = result
+                cacheSavedAt = savedAt
                 loadedGeneration = generation
                 loadedRevision = revision
                 if (cached == null) persist(result)

@@ -16,6 +16,7 @@ import javax.crypto.spec.GCMParameterSpec
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.io.File
 
 @Serializable
 private data class SavedServer(val kind: String, val url: String, val username: String, val encryptedPassword: String)
@@ -36,11 +37,24 @@ data class ServerSettings(
 private val Context.serverSettingsDataStore by preferencesDataStore(name = "server_settings")
 
 class ServerSettingsStore(private val context: Context) {
+    suspend fun archiveUnreadableSettings(): Boolean {
+        val source = File(context.filesDir, "datastore/server_settings.preferences_pb")
+        if (!source.isFile) return false
+        val backup = File(context.filesDir, "recovery/server_settings_${System.currentTimeMillis()}.preferences_pb")
+        if (backup.parentFile?.mkdirs() != true && backup.parentFile?.isDirectory != true) return false
+        if (!source.renameTo(backup)) return false
+        context.serverSettingsDataStore.edit { it.clear() }
+        return true
+    }
+
     private val serversKey = stringPreferencesKey("saved_servers")
     suspend fun savedServers(): List<ServerSettings> {
         val prefs = context.serverSettingsDataStore.data.first()
-        val records = prefs[serversKey]?.let { Json.decodeFromString<List<SavedServer>>(it) }.orEmpty()
-        val saved = records.map { ServerSettings(ServerKind.valueOf(it.kind), it.url, it.username, PasswordCipher.decrypt(it.encryptedPassword)) }
+        val records = prefs[serversKey]?.let { runCatching { Json.decodeFromString<List<SavedServer>>(it) }.getOrNull() }.orEmpty()
+        val saved = records.mapNotNull { record ->
+            runCatching { ServerSettings(ServerKind.valueOf(record.kind), record.url, record.username,
+                PasswordCipher.decrypt(record.encryptedPassword)) }.getOrNull()
+        }
         val active = load()
         return (saved + listOfNotNull(active)).distinctBy { Triple(it.kind, it.url, it.username) }
     }
@@ -66,7 +80,14 @@ class ServerSettingsStore(private val context: Context) {
 
     suspend fun save(settings: ServerSettings) {
         context.serverSettingsDataStore.edit { prefs ->
-            val existing = prefs[serversKey]?.let { Json.decodeFromString<List<SavedServer>>(it) }.orEmpty().toMutableList()
+            val existing = prefs[serversKey]?.let { raw ->
+                runCatching { Json.decodeFromString<List<SavedServer>>(raw) }.getOrElse {
+                    val backup = File(context.filesDir, "recovery/saved_servers_${System.currentTimeMillis()}.json")
+                    check(backup.parentFile?.mkdirs() == true || backup.parentFile?.isDirectory == true)
+                    backup.writeText(raw)
+                    emptyList()
+                }
+            }.orEmpty().toMutableList()
             val legacyUrl = prefs[urlKey] ?: prefs[lanKey] ?: prefs[wanKey]
             if (legacyUrl != null && prefs[userKey] != null && prefs[passwordKey] != null) {
                 val legacy = SavedServer(prefs[kindKey] ?: ServerKind.Navidrome.name, normalizeServerUrl(legacyUrl), prefs[userKey]!!, prefs[passwordKey]!!)
