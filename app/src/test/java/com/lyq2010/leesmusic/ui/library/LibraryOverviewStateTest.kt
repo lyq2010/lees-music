@@ -1,18 +1,33 @@
 package com.lyq2010.leesmusic.ui.library
 
+import com.lyq2010.leesmusic.ui.catalog.LibrarySong
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
 
 class LibraryOverviewStateTest {
-    @Test fun restoredOverviewShowsCacheTimeUntilRefresh() = runBlocking {
-        val cached = LibraryOverview(emptyList(), emptyList())
-        val state = LibraryOverviewState({ cached }, {}, { 1234L })
-        state.load(0, 0) { error("已命中缓存") }
-        assertEquals(1234L, state.cacheSavedAt)
-        state.load(0, 0, force = true) { cached }
-        assertEquals(0L, state.cacheSavedAt)
+    @Test fun restoredOverviewIsShownThenNetworkRefresh() = runBlocking {
+        val cached = LibraryOverview(listOf(LibrarySong("old", "旧收藏", "", null, null)), emptyList())
+        val fresh = LibraryOverview(listOf(LibrarySong("new", "新收藏", "", null, null)), emptyList())
+        var fetched = 0
+        var saved: LibraryOverview? = null
+        val state = LibraryOverviewState({ cached }, { saved = it })
+        state.load(0, 0) { fetched++; fresh }
+        assertEquals(1, fetched)
+        assertSame(fresh, state.data)
+        assertSame(fresh, saved)
+        assertNull(state.error)
     }
+
+    @Test fun restoreThenFailedRefreshKeepsCache() = runBlocking {
+        val cached = LibraryOverview(listOf(LibrarySong("old", "旧收藏", "", null, null)), emptyList())
+        val state = LibraryOverviewState({ cached }, {})
+        state.load(0, 0) { error("offline") }
+        assertSame(cached, state.data)
+        assertNotNull(state.error)
+        assertFalse(state.loading)
+    }
+
     @Test fun emptyOverviewIsCachedAndOnlyInvalidationOrMutationReloads() = runBlocking {
         val cache = LibraryBrowseCache()
         var calls = 0

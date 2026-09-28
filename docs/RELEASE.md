@@ -24,7 +24,7 @@ GitHub Actions 使用三个 Secrets：`LEES_MUSIC_KEYSTORE_BASE64`、`LEES_MUSIC
 打标签并推送后，由本仓库 `Android release` CI 完成构建、签名和上传。CI 成功后执行：
 
 ```sh
-gh workflow run lees-music-mirrors.yml --repo lyq2010/lee-releases -f tag=v1.0.1
+gh workflow run lees-music-mirrors.yml --repo lyq2010/lee-releases -f tag=v1.0.2
 ```
 
 这是单独的镜像流程；COS 与 R2 无相互依赖，可分别检查和重试。后续发布替换为对应标签。
@@ -32,7 +32,7 @@ gh workflow run lees-music-mirrors.yml --repo lyq2010/lee-releases -f tag=v1.0.1
 如果标签事件没有启动构建，可手动选择既有标签；不会移动标签或替换已发布文件：
 
 ```sh
-gh workflow run release.yml --repo lyq2010/lees-music --ref main -f tag=v1.0.1
+gh workflow run release.yml --repo lyq2010/lees-music --ref main -f tag=v1.0.2
 ```
 
 正式包仅保留中文及英文回退资源，启用 R8 代码和资源精简，预览工具仅加入 debug。`audit_apk.py` 在 CI 中检查包内容；R8 映射表作为独立 CI artifact 保存，不进入 APK。更新依赖后执行 `releaseDependencyInventory` 和 `tools/release/notices.py`，同步第三方声明。

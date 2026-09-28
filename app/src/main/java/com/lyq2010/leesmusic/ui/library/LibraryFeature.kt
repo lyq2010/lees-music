@@ -59,8 +59,7 @@ fun LibraryFeature(server: SubsonicServer?, label: String, newest: List<LibraryA
             onRetry = { refresh++; onRefreshShelf() }, onOpen = ::navigate, onAlbum = onAlbum,
             onPlayFavorites = { overview?.favorites?.takeIf { it.isNotEmpty() }?.let { onPlay(it, 0, true) } },
             onCreate = { name = ""; createError = null; create = true }, onServer = onServer,
-            onDeletePlaylist = { deleting = it; operationError = null }, onSharePlaylist = ::share,
-            cachedAt = state.cacheSavedAt)
+            onDeletePlaylist = { deleting = it; operationError = null }, onSharePlaylist = ::share)
     } else {
         key(target) {
             LibraryBrowser(target, server, client, http, revision, downloads, cache, onBack = ::back,

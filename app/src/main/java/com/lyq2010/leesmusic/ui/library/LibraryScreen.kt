@@ -26,7 +26,7 @@ fun LibraryScreen(label: String, username: String, newest: List<LibraryAlbum>, o
     onOpen: (LibraryDestination) -> Unit, onAlbum: (LibraryAlbum) -> Unit,
     onPlayFavorites: () -> Unit, onCreate: () -> Unit, onServer: () -> Unit,
     onDeletePlaylist: (com.lyq2010.leesmusic.data.api.MusicPlaylist) -> Unit = {},
-    onSharePlaylist: (com.lyq2010.leesmusic.data.api.MusicPlaylist) -> Unit = {}, cachedAt: Long = 0L) {
+    onSharePlaylist: (com.lyq2010.leesmusic.data.api.MusicPlaylist) -> Unit = {}) {
     var shared by rememberSaveable { mutableStateOf(false) }
     val playlists = overview?.playlists.orEmpty().filter { if (shared) it.owner != username else it.owner == username }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
@@ -40,7 +40,6 @@ fun LibraryScreen(label: String, username: String, newest: List<LibraryAlbum>, o
                 IconButton(onClick = onServer) { Icon(Icons.Default.Dns, "服务器设置", tint = ShellAccent) }
             }
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
-            CacheNotice(cachedAt)
             error?.let { Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(it, color = ShellMuted, modifier = Modifier.weight(1f))
                 TextButton(onClick = onRetry) { Text("重试") }

@@ -1,14 +1,19 @@
 # 开发交接
 
-更新于 2026-09-28。变更见 [CHANGELOG](CHANGELOG.md)，发布操作见 [RELEASE](RELEASE.md)，交互规范见 [PRODUCT](PRODUCT.md)。验收结果与产品边界统一维护在本文。
+更新于 2026-09-29。变更见 [CHANGELOG](CHANGELOG.md)，发布操作见 [RELEASE](RELEASE.md)，交互规范见 [PRODUCT](PRODUCT.md)。验收结果与产品边界统一维护在本文。
 
 ## 当前版本
 
-- 当前源码为 1.0.1 / versionCode 5，发布标签 `v1.0.1`；包名 `com.lyq2010.leesmusic`，Android 8.0+，compile/targetSdk 37。标签后的 `main` 仅合并发布门禁 job 与更新交接文档，不改变 1.0.1 发布资产。
-- [1.0.1 GitHub Release](https://github.com/lyq2010/lees-music/releases/tag/v1.0.1) 的[正式构建 CI](https://github.com/lyq2010/lees-music/actions/runs/36343261379) 成功，提交 `af41726`；[双通道镜像 CI](https://github.com/lyq2010/lee-releases/actions/runs/36344283217) 的 COS、R2 均成功。两通道清单、APK、源码和校验文件已逐一下载并与 GitHub 发布资产比对一致，旧版 1.0.0 镜像资产返回 404。
+- 当前源码为 1.0.2 / versionCode 6，发布标签 `v1.0.2`；包名 `com.lyq2010.leesmusic`，Android 8.0+，compile/targetSdk 37。
+- 上一版 [1.0.1 GitHub Release](https://github.com/lyq2010/lees-music/releases/tag/v1.0.1) 的[正式构建 CI](https://github.com/lyq2010/lees-music/actions/runs/36343261379) 成功，提交 `af41726`；[双通道镜像 CI](https://github.com/lyq2010/lee-releases/actions/runs/36344283217) 的 COS、R2 均成功。两通道清单、APK、源码和校验文件已逐一下载并与 GitHub 发布资产比对一致，旧版 1.0.0 镜像资产返回 404。
 - 1.0.1 正式 APK 为 2,958,722 字节，SHA-256 `047cfc05503e91a2d3b2384fe445c685ba3c3577aad1afb707b69e7d9129bca1`；包名、versionCode 5、更新记录与对应源码已核验，签名证书 SHA-256 `e26eb294374fce5b845f6b09527c06017500c1ae14ca16b24779b3b7c044e966` 与 1.0.0 一致。
-- 上一版 [1.0.0 GitHub Release](https://github.com/lyq2010/lees-music/releases/tag/v1.0.0) 的[正式构建 CI](https://github.com/lyq2010/lees-music/actions/runs/36296595579) 成功，发布提交 `71a03dd`；[双通道镜像 CI](https://github.com/lyq2010/lee-releases/actions/runs/36296894549) 的 COS、R2 均成功。两通道清单、APK、源码和校验文件已逐一下载并与 GitHub 发布资产比对一致；COS 首次分片上传失败，单独重试后通过。
 - GPL-3.0-only；正式签名保存在指定外部备份目录，私钥与密码不进入 Git。已有 GitHub 0.1.0 可使用同一签名覆盖升级；不得为验证擅自卸载或清除用户数据。
+
+## 1.0.2 曲库自动刷新
+
+- 曲库概览与列表改为：有本地缓存时先展示，再联网刷新并落盘；刷新失败保留缓存并提示重试。
+- 移除首页与列表中的“本地缓存 · 时间 · 点刷新获取最新”提示；手动刷新入口保留。
+- 相关 JVM 测试已覆盖缓存先展示、失败保留与内存复用；完整设备回归由发布 CI 模拟器门禁执行。本轮未将新构建安装到 S25。
 
 ## 1.0.1 修复与本地验证
 

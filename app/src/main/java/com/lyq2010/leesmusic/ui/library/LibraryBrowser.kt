@@ -104,7 +104,6 @@ fun LibraryBrowser(target: LibraryDestination, server: SubsonicServer?, client: 
         }
         if (!offline) OutlinedTextField(filter, { state.filter = it }, placeholder = { Text("筛选当前列表") },
             singleLine = true, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp))
-        if (!offline) CacheNotice(state.cacheSavedAt)
         if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { message -> Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(message, color = ShellMuted, modifier = Modifier.weight(1f))

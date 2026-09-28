@@ -6,15 +6,14 @@ import kotlinx.coroutines.CancellationException
 
 /** Owned above navigation and tabs, recreated whenever the configured account changes. */
 class LibraryBrowseCache(private val disk: com.lyq2010.leesmusic.data.library.LibraryDiskCache? = null) {
-    val overview = LibraryOverviewState({ disk?.overview() }, { disk?.saveOverview(it) }, { disk?.overviewUpdatedAt() ?: 0L })
+    val overview = LibraryOverviewState({ disk?.overview() }, { disk?.saveOverview(it) })
     private val pages = mutableMapOf<Pair<String, String>, LibraryPageState>()
     private val albums = mutableMapOf<String, Pair<Int, com.lyq2010.leesmusic.data.api.Album>>()
     var generation by mutableIntStateOf(0)
         private set
 
     fun page(target: LibraryDestination): LibraryPageState =
-        pages.getOrPut(target.kind to target.id) { LibraryPageState({ disk?.page(target) }, { disk?.save(target, it) },
-            { disk?.updatedAt(target) ?: 0L }) }
+        pages.getOrPut(target.kind to target.id) { LibraryPageState({ disk?.page(target) }, { disk?.save(target, it) }) }
 
     fun invalidate() { generation++ }
 
@@ -32,7 +31,7 @@ class LibraryBrowseCache(private val disk: com.lyq2010.leesmusic.data.library.Li
 }
 
 class LibraryPageState(private val restore: suspend () -> LibraryPage? = { null },
-    private val persist: suspend (LibraryPage) -> Unit = {}, private val restoredAt: suspend () -> Long = { 0L }) {
+    private val persist: suspend (LibraryPage) -> Unit = {}) {
     var data by mutableStateOf<LibraryPage?>(null)
         private set
     var filter by mutableStateOf("")
@@ -41,8 +40,6 @@ class LibraryPageState(private val restore: suspend () -> LibraryPage? = { null 
     var artistGrid by mutableStateOf(true)
     var artistSort by mutableIntStateOf(0)
     var sort by mutableIntStateOf(0)
-    var cacheSavedAt by mutableLongStateOf(0L)
-        private set
     var favoritesOnly by mutableStateOf(false)
     fun updateArtist(id: String, favorite: Boolean) {
         data = data?.let { page -> page.copy(artists = page.artists.map {
@@ -63,15 +60,15 @@ class LibraryPageState(private val restore: suspend () -> LibraryPage? = { null 
         loading = true
         error = null
         try {
-            val cached = if (!force && data == null && generation == 0 && revision == 0) restore() else null
-            val savedAt = if (cached != null) restoredAt() else 0L
-            val result = cached ?: fetch()
+            if (!force && data == null && generation == 0 && revision == 0) {
+                restore()?.let { if (current == request) data = it }
+            }
+            val result = fetch()
             if (current == request) {
                 data = result
-                cacheSavedAt = savedAt
                 loadedGeneration = generation
                 loadedRevision = revision
-                if (cached == null) persist(result)
+                persist(result)
             }
         } catch (cancelled: CancellationException) {
             throw cancelled

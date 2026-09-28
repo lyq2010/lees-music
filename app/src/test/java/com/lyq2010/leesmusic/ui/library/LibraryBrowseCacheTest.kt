@@ -7,13 +7,24 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class LibraryBrowseCacheTest {
-    @Test fun restoredPageShowsCacheTimeUntilSuccessfulRefresh() = runBlocking {
+    @Test fun restoredPageIsShownThenNetworkRefresh() = runBlocking {
         val cached = LibraryPage(songs = listOf(LibrarySong("cached", "旧歌曲", "", null, null)))
-        val state = LibraryPageState({ cached }, {}, { 1234L })
-        state.load(0, 0) { error("已命中缓存") }
-        assertEquals(1234L, state.cacheSavedAt)
-        state.load(0, 0, force = true) { LibraryPage() }
-        assertEquals(0L, state.cacheSavedAt)
+        val fresh = LibraryPage(songs = listOf(LibrarySong("fresh", "新歌曲", "", null, null)))
+        var fetched = 0
+        val state = LibraryPageState({ cached }, {})
+        state.load(0, 0) { fetched++; fresh }
+        assertEquals(1, fetched)
+        assertSame(fresh, state.data)
+        state.load(0, 0) { fetched++; error("不应请求") }
+        assertEquals(1, fetched)
+    }
+
+    @Test fun restoreThenFailedRefreshKeepsCachedPage() = runBlocking {
+        val cached = LibraryPage(songs = listOf(LibrarySong("cached", "旧歌曲", "", null, null)))
+        val state = LibraryPageState({ cached }, {})
+        state.load(0, 0) { error("已命中缓存后刷新失败") }
+        assertSame(cached, state.data)
+        assertNotNull(state.error)
     }
     @Test fun loadedAndEmptyPagesAreReusedButRefreshReplacesThem() = runBlocking {
         for (kind in listOf("songs", "albums", "artists")) {

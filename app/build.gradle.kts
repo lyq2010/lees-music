@@ -14,8 +14,8 @@ android {
         applicationId = "com.lyq2010.leesmusic"
         minSdk = 26
         targetSdk = 37
-        versionCode = 5
-        versionName = "1.0.1"
+        versionCode = 6
+        versionName = "1.0.2"
         buildConfigField("String", "COS_UPDATE_BASE", "\"https://releases.angelolee.cn\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

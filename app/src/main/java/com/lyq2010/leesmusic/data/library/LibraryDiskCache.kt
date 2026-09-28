@@ -20,7 +20,6 @@ class LibraryDiskCache(private val root: File, private val server: SubsonicServe
     private fun file(key: String) = AtomicFile(File(root, MessageDigest.getInstance("SHA-256")
         .digest(key.toByteArray()).joinToString("") { "%02x".format(it) } + ".json"))
     fun updatedAt(target: LibraryDestination): Long = file("${target.kind}:${target.id}").baseFile.lastModified()
-    fun overviewUpdatedAt(): Long = file("overview").baseFile.lastModified()
     private fun read(key: String) = runCatching { file(key).openRead().bufferedReader().use { it.readText() } }.getOrNull()
     private fun write(key: String, text: String) = synchronized(writeLock) {
         root.mkdirs()
