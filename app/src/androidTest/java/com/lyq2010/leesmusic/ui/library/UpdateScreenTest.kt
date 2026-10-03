@@ -2,15 +2,52 @@ package com.lyq2010.leesmusic.ui.library
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.test.platform.app.InstrumentationRegistry
+import android.graphics.Bitmap
+import java.io.File
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
 import com.lyq2010.leesmusic.BuildConfig
 import com.lyq2010.leesmusic.ui.settings.UpdateScreen
 import com.lyq2010.leesmusic.ui.settings.UpdateHistory
 import com.lyq2010.leesmusic.ui.shell.ShellTheme
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Assert.assertEquals
 
 class UpdateScreenTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun backArrowAndTitleHaveTheSameVerticalCenter() {
+        compose.setContent { ShellTheme {
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) { UpdateScreen {} }
+        } }
+        assertHeadingAligned()
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        File(context.cacheDir, "update-heading.png").outputStream().use {
+            compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
+    }
+
+    @Test fun backArrowAndTitleStayAlignedWithLargeText() {
+        compose.setContent {
+            val density = LocalDensity.current.density
+            CompositionLocalProvider(LocalDensity provides Density(density, 2f)) { ShellTheme { UpdateScreen {} } }
+        }
+        assertHeadingAligned()
+    }
+
+    private fun assertHeadingAligned() {
+        val arrow = compose.onNodeWithContentDescription("返回", substring = true).fetchSemanticsNode().boundsInRoot
+        val title = compose.onNodeWithText("应用更新").fetchSemanticsNode().boundsInRoot
+        assertEquals(title.center.y, arrow.center.y, 1f)
+    }
 
     @Test fun initialPageShowsOnlyCurrentVersionNotes() {
         compose.setContent { ShellTheme { UpdateScreen {} } }

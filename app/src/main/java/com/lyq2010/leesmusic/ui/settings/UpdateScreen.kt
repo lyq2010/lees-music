@@ -3,8 +3,6 @@ package com.lyq2010.leesmusic.ui.settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -38,10 +36,7 @@ fun UpdateScreen(onBack: () -> Unit) {
         }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-        Row {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Default.ArrowBack, "返回") }
-            Text("应用更新", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(8.dp))
-        }
+        SettingsHeading("应用更新", onBack)
         Spacer(Modifier.height(24.dp))
         Text("Lee’s Music", style = MaterialTheme.typography.titleLarge)
         Text("当前版本 ${BuildConfig.VERSION_NAME}")

@@ -31,12 +31,12 @@ class PlaybackCacheTest {
             return output.toByteArray()
         } finally { source.close() }
     }
-    private fun withPipeline(test: (PlaybackPipeline, MockWebServer) -> Unit) {
+    private fun withPipeline(test: (PlaybackPipeline, MockWebServer, SimpleCache) -> Unit) {
         val server = MockWebServer(); server.start()
         val cache = SimpleCache(File(context.cacheDir, "reliability-test-${UUID.randomUUID()}"), NoOpCacheEvictor(), StandaloneDatabaseProvider(context))
         val executor = Executors.newSingleThreadExecutor()
         val pipeline = PlaybackPipeline(context, PlaybackNetworkPolicy(context), cache, { true }, executor)
-        try { test(pipeline, server) } finally {
+        try { test(pipeline, server, cache) } finally {
             pipeline.close()
             check(executor.awaitTermination(10, TimeUnit.SECONDS)) { "Prefetch worker did not stop" }
             server.shutdown()
@@ -57,7 +57,7 @@ class PlaybackCacheTest {
             }
         }
     }
-    @Test fun interruptedReadResumesRangeAndCompletedCachePlaysWithoutServer() = withPipeline { pipeline, server ->
+    @Test fun interruptedReadResumesRangeAndCompletedCachePlaysWithoutServer() = withPipeline { pipeline, server, _ ->
         rangeServer(server)
         val url = server.url("/stream?id=1&u=a&format=raw").toString()
         try { read(pipeline.prefetchFactory.createDataSourceForDownloading(), url); fail("Expected interrupted body") } catch (_: java.io.IOException) { }
@@ -70,7 +70,7 @@ class PlaybackCacheTest {
         server.shutdown()
         assertArrayEquals(audio, read(pipeline.factory.createDataSource(), url))
     }
-    @Test fun rejectedRangeFallsBackToFullGetWithoutDuplicatingBytes() = withPipeline { pipeline, server ->
+    @Test fun rejectedRangeFallsBackToFullGetWithoutDuplicatingBytes() = withPipeline { pipeline, server, _ ->
         rangeServer(server, true)
         val url = server.url("/stream?id=2&u=a&format=raw").toString()
         try { read(pipeline.prefetchFactory.createDataSourceForDownloading(), url) } catch (_: java.io.IOException) { }
@@ -79,7 +79,7 @@ class PlaybackCacheTest {
         assertNotNull(requests[1].getHeader("Range"))
         assertNull(requests[2].getHeader("Range"))
     }
-    @Test fun prefetchFillsCurrentThenNextAndDoesNotReadOtherQueueItems() = withPipeline { pipeline, server ->
+    @Test fun prefetchFillsCurrentThenNextAndDoesNotReadOtherQueueItems() = withPipeline { pipeline, server, _ ->
         server.dispatcher = object : Dispatcher() { override fun dispatch(request: RecordedRequest) = MockResponse().setBody(Buffer().write(audio)) }
         val items = (1..2).map { MediaItem.fromUri(server.url("/stream?id=$it&u=a&format=raw").toString()) }
         pipeline.prefetch(items)
@@ -90,11 +90,11 @@ class PlaybackCacheTest {
         assertTrue(server.takeRequest(2, TimeUnit.SECONDS)!!.path!!.contains("id=2"))
         assertEquals(2, server.requestCount)
     }
-    @Test fun nasWakeDelayOfTwentySecondsDoesNotTimeout() = withPipeline { pipeline, server ->
+    @Test fun nasWakeDelayOfTwentySecondsDoesNotTimeout() = withPipeline { pipeline, server, _ ->
         server.enqueue(MockResponse().setHeadersDelay(20, TimeUnit.SECONDS).setBody("audio"))
         assertEquals("audio", String(read(pipeline.factory.createDataSource(), server.url("/stream").toString())))
     }
-    @Test fun openPlaybackStreamDoesNotBlockWholeSongPrefetch() = withPipeline { pipeline, server ->
+    @Test fun openPlaybackStreamDoesNotBlockWholeSongPrefetch() = withPipeline { pipeline, server, _ ->
         server.dispatcher = object : Dispatcher() { override fun dispatch(request: RecordedRequest) = MockResponse().setBody(Buffer().write(audio)) }
         val url = server.url("/stream?id=playing").toString()
         val item = MediaItem.fromUri(url)
@@ -109,6 +109,20 @@ class PlaybackCacheTest {
             assertTrue("Whole-song prefetch is blocked by playback", pipeline.fullyCached(item))
         } finally { source.close() }
         assertArrayEquals(audio, read(pipeline.factory.createDataSource(), url))
+        assertEquals(2, server.requestCount)
+    }
+    @Test fun prefetchCommitsSmallFragmentsForKnownAndUnknownLengths() = withPipeline { pipeline, server, cache ->
+        server.enqueue(MockResponse().setBody(Buffer().write(audio)))
+        server.enqueue(MockResponse().setChunkedBody(Buffer().write(audio), 32768))
+        val items = (1..2).map { MediaItem.fromUri(server.url("/stream?id=fragment-$it").toString()) }
+        pipeline.prefetch(items)
+        val deadline = System.currentTimeMillis() + 10000
+        while (!items.all(pipeline::fullyCached) && System.currentTimeMillis() < deadline) Thread.sleep(50)
+        assertTrue(items.all(pipeline::fullyCached))
+        val spans = cache.keys.flatMap { cache.getCachedSpans(it) }
+        assertEquals("Both 3 MiB songs must be split into 2 MiB + 1 MiB", 4, spans.size)
+        assertTrue(spans.all { it.length <= 2L * 1024 * 1024 })
+        items.forEach { assertArrayEquals(audio, read(pipeline.factory.createDataSource(), it.localConfiguration!!.uri.toString())) }
         assertEquals(2, server.requestCount)
     }
 }

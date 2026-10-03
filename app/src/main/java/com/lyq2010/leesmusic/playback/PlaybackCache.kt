@@ -15,7 +15,7 @@ internal object PlaybackCache {
     // One cache owner for the process, shared by both decks and the prefetch worker.
     fun get(context: Context): SimpleCache = instance ?: synchronized(this) {
         instance ?: run {
-            val limit = com.lyq2010.leesmusic.data.settings.PlaybackPreferences(context).playbackCacheMb * 1024L * 1024
+            val limit = playbackCacheLimitBytes(com.lyq2010.leesmusic.data.settings.PlaybackPreferences(context).playbackCacheMb)
             val policy = AdjustableCacheEvictor(limit).also { evictor = it }
             SimpleCache(File(context.applicationContext.cacheDir, "playback"), policy,
                 StandaloneDatabaseProvider(context.applicationContext)).also { instance = it }
@@ -32,7 +32,7 @@ internal object PlaybackCache {
     }
     fun resize(context: Context, megabytes: Int) {
         val cache = get(context)
-        evictor!!.resize(cache, megabytes * 1024L * 1024)
+        evictor!!.resize(cache, playbackCacheLimitBytes(megabytes))
     }
     fun clearUnused(context: Context): Long {
         val cache = get(context)

@@ -35,7 +35,7 @@ internal class PlaybackPipeline(
         val network = OkHttpDataSource.Factory(http).setUserAgent("LeesMusic/1.0")
         return CacheDataSource.Factory().setCache(cache).setCacheKeyFactory(keyFactory)
             .setUpstreamDataSourceFactory { policy.wrap(RangeFallbackDataSource(network.createDataSource())) }
-            .setCacheWriteDataSinkFactory(CacheDataSink.Factory().setCache(cache).setFragmentSize(2L * 1024 * 1024))
+            .setCacheWriteDataSinkFactory(CacheDataSink.Factory().setCache(cache).setFragmentSize(PLAYBACK_CACHE_FRAGMENT_BYTES))
     }
     // Local downloads, content URIs and test data URIs bypass the network cache entirely.
     // Only the prefetch worker writes: a paused/buffer-full playback loader must not hold
@@ -67,9 +67,10 @@ internal class PlaybackPipeline(
                 while (generation.get() == token && canFetch()) {
                     if (fullyCached(item)) break
                     val spec = DataSpec.Builder().setUri(item.localConfiguration!!.uri)
-                        .setKey(item.localConfiguration?.customCacheKey).build()
+                        .setKey(item.localConfiguration?.customCacheKey)
+                        .setFlags(DataSpec.FLAG_ALLOW_CACHE_FRAGMENTATION).build()
                     val task = CacheWriter(prefetchFactory.createDataSourceForDownloading(), spec, null) { length, _, _ ->
-                        if (length > preferences.playbackCacheMb * 1024L * 1024 || generation.get() != token || !canFetch()) writer?.cancel()
+                        if (length > playbackCacheLimitBytes(preferences.playbackCacheMb) || generation.get() != token || !canFetch()) writer?.cancel()
                     }
                     writer = task
                     if (generation.get() != token) { task.cancel(); break }
