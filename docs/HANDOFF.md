@@ -1,15 +1,54 @@
 # 开发交接
 
-更新于 2026-09-29。变更见 [CHANGELOG](CHANGELOG.md)，发布操作见 [RELEASE](RELEASE.md)，交互规范见 [PRODUCT](PRODUCT.md)。验收结果与产品边界统一维护在本文。
+更新于 2026-10-03。变更见 [CHANGELOG](CHANGELOG.md)，发布操作见 [RELEASE](RELEASE.md)，交互规范见 [PRODUCT](PRODUCT.md)。验收结果与产品边界统一维护在本文。
 
 ## 当前版本
 
-- 当前源码为 1.0.2 / versionCode 6，发布标签 `v1.0.2`；包名 `com.lyq2010.leesmusic`，Android 8.0+，compile/targetSdk 37。
+- 当前源码为待验证的 1.0.3 / versionCode 7，计划标签 `v1.0.3`；尚未发布。包名 `com.lyq2010.leesmusic`，Android 8.0+，compileSdk 37.2、targetSdk 37。最新已发布版本仍为 1.0.2。
 - [1.0.2 GitHub Release](https://github.com/lyq2010/lees-music/releases/tag/v1.0.2) 的[正式构建 CI](https://github.com/lyq2010/lees-music/actions/runs/36455731606) 成功，提交 `d3963eb`；[双通道镜像 CI](https://github.com/lyq2010/lee-releases/actions/runs/36457379361) 的 COS、R2 均成功。两通道清单、APK 摘要与 GitHub 发布资产一致，旧版 1.0.1 镜像资产返回 404。
 - 1.0.2 正式 APK 为 2,958,450 字节，SHA-256 `9e4a2026cd7f7982993b67c04c8221e8e38939670f65cb8b9b69f8f0e0f64ff2`；包名、versionCode 6、更新记录与对应源码已核验。
 - 上一版 [1.0.1 GitHub Release](https://github.com/lyq2010/lees-music/releases/tag/v1.0.1) 的[正式构建 CI](https://github.com/lyq2010/lees-music/actions/runs/36343261379) 成功，提交 `af41726`；[双通道镜像 CI](https://github.com/lyq2010/lee-releases/actions/runs/36344283217) 的 COS、R2 均成功。
 - 1.0.1 正式 APK 为 2,958,722 字节，SHA-256 `047cfc05503e91a2d3b2384fe445c685ba3c3577aad1afb707b69e7d9129bca1`；签名证书 SHA-256 `e26eb294374fce5b845f6b09527c06017500c1ae14ca16b24779b3b7c044e966` 与既有版本一致。
 - GPL-3.0-only；正式签名保存在指定外部备份目录，私钥与密码不进入 Git。已有 GitHub 0.1.0 可使用同一签名覆盖升级；不得为验证擅自卸载或清除用户数据。
+
+## 1.0.3 依赖维护与验证
+
+- 以 `db6c690c7fb1ef89dd61afdb750ed7d60d53d6bc` 的完整源码为基线，在云端重新解析更新前、更新后的 `releaseRuntimeClasspath`，不是按旧声明文档猜测实际版本。更新后的 94 个不重复运行时坐标及原始许可证已重新生成到 `THIRD_PARTY_NOTICES.md`；`app/gradle.lockfile` 固定发布运行时图。
+- Kotlin Compose/serialization 插件和实际 Kotlin 运行时升级至 2.4.20，Gradle wrapper 由 9.6.0 升级至 9.8.0并重新生成全部 wrapper 文件。分发 ZIP 与 wrapper JAR 的 SHA-256 均已和官方值核对。AGP 继续使用现有最新稳定版 9.4.1。
+- Compose 改用官方 `compose-bom-alpha:2026.09.00`，保留 Material3 1.5.0-alpha29 显式版本。原有 14 个 alpha01 组件统一到 alpha03，BOM 同时将 material-ripple 由 1.12.1 对齐至 1.13.0-alpha03；该组件也需纳入界面回归，不能只宣称更新了原有 14 项。
+- UI/Foundation alpha03 的实际 AAR 元数据要求 compileSdk 至少 37.1，因此应用与 CI 一起使用 37.2；Build Tools 37.0.0 也明确锁定，targetSdk 37、minSdk 26 和 Java/JVM 17 目标不变。
+- 针对 Guava 增加有原因说明的普通依赖约束，使 Media3 的传递依赖解析到 33.7.2-android；failureaccess 随之升到 1.0.3。该版本修复 [CVE-2026-102554](https://github.com/google/guava/security/advisories/GHSA-xxph-c9ww-hj94)。源代码未发现 `ObjectInputStream`/`readObject` 使用，未证明应用原本可利用；此次是引入上游修复，不是全面安全审计。
+- Okio 普通约束提升至 3.18.2，纳入 Base64 填充兼容性修复；协程作为本应用实际使用的直接依赖声明为 1.11.0。Collection 1.6.0、Graphics Path 1.1.0、JSpecify 1.0.1 通过新的父依赖要求自然提升，未使用全局 `force` 或逐个覆盖所有传递组件。
+- 新增 JVM 回归覆盖 Base64 填充、Guava Future 和协程取消清理；新增 5 项 Python 用例覆盖第三方声明的精确坐标、嵌入声明、父 POM 许可证、缺失元数据和只读过期检查。CI 在设备测试及读取签名材料之前执行真实依赖清单与已提交声明的一致性检查。
+- Kotlin 官方[兼容矩阵](https://kotlinlang.org/docs/gradle-configure-project.html)完全测试范围上限为 Gradle 9.7.0 / AGP 9.3.1，同时允许使用更新版本但提示可能出现弃用或功能兼容问题。因此不能把 9.8.0 / 9.4.1 组合说成已获上游完整验证，必须以本仓库构建、lint、JVM 和设备回归结果为准。项目未应用 KAPT，不据 Kotlin 的 KAPT 缓存公告断言当前产品可利用。
+
+### 保留父依赖约束的运行时组件
+
+10 月 2 日报告的 25 项稳定版差异中，10 项通过本轮修复或父依赖自然提升得到处理；以下 15 项在实际解析中仍由当前父依赖选定。没有已确认必须在本轮强制覆盖的修复依据，因此保留并如实记录，不改声明伪装成全部最新版。Tracing 与 JetBrains annotations 尤其跨主版本，需独立评估；其他项目可随对应上游父依赖的后续兼容升级复核。
+
+| 坐标 | 本轮实际解析 | 报告候选版本 |
+| --- | --- | --- |
+| `androidx.annotation:annotation-experimental` | 1.4.1 | 1.6.0 |
+| `androidx.annotation:annotation-jvm` | 1.10.0 | 1.11.0 |
+| `androidx.autofill:autofill` | 1.0.0 | 1.3.0 |
+| `androidx.concurrent:concurrent-futures` | 1.2.0 | 1.3.0 |
+| `androidx.customview:customview-poolingcontainer` | 1.0.0 | 1.1.0 |
+| `androidx.emoji2:emoji2` | 1.4.0 | 1.7.0 |
+| `androidx.exifinterface:exifinterface` | 1.3.6 | 1.4.2 |
+| `androidx.graphics:graphics-shapes-android` | 1.0.1 | 1.1.0 |
+| `androidx.media:media` | 1.7.0 | 1.8.0 |
+| `androidx.profileinstaller:profileinstaller` | 1.4.0 | 1.4.1 |
+| `androidx.tracing:tracing` | 1.2.0 | 2.0.3 |
+| `androidx.versionedparcelable:versionedparcelable` | 1.1.1 | 1.2.1 |
+| `androidx.window:window-core-android` | 1.5.0 | 1.5.1 |
+| `androidx.window:window` | 1.5.0 | 1.5.1 |
+| `org.jetbrains:annotations` | 23.0.0 | 26.1.0 |
+
+### 本轮验证状态
+
+- 已完成：更新前后真实 Gradle 解析、运行时锁文件、声明生成及 `--check`、10 项 Python 发布工具测试、wrapper 官方摘要核验，以及 82 项 JVM 测试（24 个测试类，0 失败、0 错误、0 跳过）。Debug/Release Kotlin 与 Java 源代码编译已完成。构建使用 Temurin JDK 17.0.20.1、Gradle 9.8.0、SDK 37.2 和 Build Tools 37.0.0；Gradle 构建工具图确认 KGP 实际统一到 2.4.20。
+- 尚未完成：release lint、完整 APK/设备测试包、云端设备交互回归及正式签名核验。完整校验进程在 `lintAnalyzeRelease` / `mergeExtDexDebug` 阶段中断，尚未生成 lint 报告或完整 APK；不能把已通过的编译/JVM 测试扩称为完整构建通过。后续恢复验证后更新本条，不得以历史版本结果替代。
+- 发布前仍须遵守 `RELEASE.md` 的既有门禁；本轮未接触维护者电脑、MuMu 或 S25。未创建发布标签，未上传或覆盖正式资产。
 
 ## 1.0.2 曲库自动刷新
 

@@ -24,7 +24,7 @@ GitHub Actions 使用三个 Secrets：`LEES_MUSIC_KEYSTORE_BASE64`、`LEES_MUSIC
 打标签并推送后，由本仓库 `Android release` CI 完成构建、签名和上传。CI 成功后执行：
 
 ```sh
-gh workflow run lees-music-mirrors.yml --repo lyq2010/lee-releases -f tag=v1.0.2
+gh workflow run lees-music-mirrors.yml --repo lyq2010/lee-releases -f tag=v1.0.3
 ```
 
 这是单独的镜像流程；COS 与 R2 无相互依赖，可分别检查和重试。后续发布替换为对应标签。
@@ -32,10 +32,18 @@ gh workflow run lees-music-mirrors.yml --repo lyq2010/lee-releases -f tag=v1.0.2
 如果标签事件没有启动构建，可手动选择既有标签；不会移动标签或替换已发布文件：
 
 ```sh
-gh workflow run release.yml --repo lyq2010/lees-music --ref main -f tag=v1.0.2
+gh workflow run release.yml --repo lyq2010/lees-music --ref main -f tag=v1.0.3
 ```
 
-正式包仅保留中文及英文回退资源，启用 R8 代码和资源精简，预览工具仅加入 debug。`audit_apk.py` 在 CI 中检查包内容；R8 映射表作为独立 CI artifact 保存，不进入 APK。更新依赖后执行 `releaseDependencyInventory` 和 `tools/release/notices.py`，同步第三方声明。
+正式包仅保留中文及英文回退资源，启用 R8 代码和资源精简，预览工具仅加入 debug。`audit_apk.py` 在 CI 中检查包内容；R8 映射表作为独立 CI artifact 保存，不进入 APK。更新依赖后按以下顺序刷新实际发布运行时锁文件及第三方声明，不得手工把声明中的版本改成候选版本：
+
+```sh
+bash gradlew :app:releaseDependencyInventory --write-locks --no-configuration-cache
+python3 tools/release/notices.py
+python3 tools/release/notices.py --check
+```
+
+将 `app/gradle.lockfile`、Gradle 生成的其他锁文件和声明一起提交。普通发布不要使用 `--write-locks`；CI 从已提交锁文件解析运行时，再执行声明的只读一致性检查，任一步失败都不得进入签名/发布。当前构建需要 Android SDK 37.2 与 Build Tools 37.0.0；compileSdk 的小版本、CI 安装包以及 apksigner 路径必须一起维护。
 
 更新器只在用户点击检查时联网；比较两个通道的有效版本，下载时校验长度与 SHA-256，安装前检查包名、版本和签名。安装由 Android 系统确认。升级成功后首次启动清理已安装的更新包，下载失败或取消时清理残留，未安装的新包保留；清理与下载在后台互斥执行。无可用清单时明确报错，不显示“已是最新版本”。
 
@@ -54,6 +62,8 @@ gh workflow run release.yml --repo lyq2010/lees-music --ref main -f tag=v1.0.2
 - `docs/RELEASE_NOTES.md` 为本次 GitHub Release 简介，沿用同样的简洁写法，另保留必要的兼容性和真机验收说明。
 - `docs/CHANGELOG.md` 保留完整中文历史，按版本记录每次变更；详细验证证据、技术边界和交接事项写入 `docs/HANDOFF.md`，不塞进应用内更新记录。
 - 发布前核对版本标题、`versionName`、`versionCode` 和标签，确保记录描述的是本次实际交付内容。
+
+`Android validation` 通过手动触发独立运行 JVM、lint、Debug/测试包构建、依赖声明检查和云端 API 35 设备回归，不读取发布签名材料，也不创建 Release。正式标签前检查其对应源码 SHA 的结果；云端模拟器结果不自动等于 MuMu 或真机验收。
 
 发布前完成：JVM 测试、Android 构建与 lint、MuMu 交互回归、正式 APK 签名核验、源码敏感信息检查、许可证及依赖声明检查。
 S25 连续后台播放、网络切换、独立长时锁屏、蓝牙切换、退出崩溃修复版、小组件及媒体胶囊，均已由用户于 2026-09-28 确认验收通过。长暂停恢复按用户决定不作为交付阻碍。后续新修复仍须按其影响范围重新回归，既有验收结论不自动覆盖新版本。

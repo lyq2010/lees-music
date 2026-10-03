@@ -8,14 +8,17 @@ plugins {
 
 android {
     namespace = "com.lyq2010.leesmusic"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) { minorApiLevel = 2 }
+    }
+    buildToolsVersion = "37.0.0"
 
     defaultConfig {
         applicationId = "com.lyq2010.leesmusic"
         minSdk = 26
         targetSdk = 37
-        versionCode = 6
-        versionName = "1.0.2"
+        versionCode = 7
+        versionName = "1.0.3"
         buildConfigField("String", "COS_UPDATE_BASE", "\"https://releases.angelolee.cn\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -87,6 +90,15 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.android)
+    constraints {
+        implementation(libs.guava) {
+            because("Guava 33.7.2 fixes CVE-2026-102554; preserve the Android variant")
+        }
+        implementation(libs.okio) {
+            because("Okio 3.18.2 restores padded Base64 compatibility for existing callers")
+        }
+    }
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.session)
@@ -102,7 +114,15 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
 
+// Lock the shipped runtime graph; refresh it deliberately with --write-locks.
+configurations.configureEach {
+    if (name == "releaseRuntimeClasspath") {
+        resolutionStrategy.activateDependencyLocking()
+    }
+}
+
 tasks.register("releaseDependencyInventory") {
+    notCompatibleWithConfigurationCache("Exports resolved artifact paths for third-party notices")
     doLast {
         val output = layout.buildDirectory.file("reports/release-dependencies.tsv").get().asFile
         output.parentFile.mkdirs()
