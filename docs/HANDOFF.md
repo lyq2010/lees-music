@@ -1,10 +1,10 @@
 # 开发交接
 
-更新于 2026-10-03。变更见 [CHANGELOG](CHANGELOG.md)，发布操作见 [RELEASE](RELEASE.md)，交互规范见 [PRODUCT](PRODUCT.md)。验收结果与产品边界统一维护在本文。
+更新于 2026-10-04。变更见 [CHANGELOG](CHANGELOG.md)，发布操作见 [RELEASE](RELEASE.md)，交互规范见 [PRODUCT](PRODUCT.md)。验收结果与产品边界统一维护在本文。
 
 ## 当前版本
 
-- 当前源码为待验证的 1.0.3 / versionCode 7，计划标签 `v1.0.3`；尚未发布。包名 `com.lyq2010.leesmusic`，Android 8.0+，compileSdk 37.2、targetSdk 37。最新已发布版本仍为 1.0.2。
+- 当前源码为 1.0.3 / versionCode 7，计划标签 `v1.0.3`；依赖更新的独立验证与 MuMu 回归通过，待正式签名发布。包名 `com.lyq2010.leesmusic`，Android 8.0+，compileSdk 37.2、targetSdk 37。最新已发布版本仍为 1.0.2。
 - [1.0.2 GitHub Release](https://github.com/lyq2010/lees-music/releases/tag/v1.0.2) 的[正式构建 CI](https://github.com/lyq2010/lees-music/actions/runs/36455731606) 成功，提交 `d3963eb`；[双通道镜像 CI](https://github.com/lyq2010/lee-releases/actions/runs/36457379361) 的 COS、R2 均成功。两通道清单、APK 摘要与 GitHub 发布资产一致，旧版 1.0.1 镜像资产返回 404。
 - 1.0.2 正式 APK 为 2,958,450 字节，SHA-256 `9e4a2026cd7f7982993b67c04c8221e8e38939670f65cb8b9b69f8f0e0f64ff2`；包名、versionCode 6、更新记录与对应源码已核验。
 - 上一版 [1.0.1 GitHub Release](https://github.com/lyq2010/lees-music/releases/tag/v1.0.1) 的[正式构建 CI](https://github.com/lyq2010/lees-music/actions/runs/36343261379) 成功，提交 `af41726`；[双通道镜像 CI](https://github.com/lyq2010/lee-releases/actions/runs/36344283217) 的 COS、R2 均成功。
@@ -47,8 +47,9 @@
 ### 本轮验证状态
 
 - 已完成：更新前后真实 Gradle 解析、运行时锁文件、声明生成及 `--check`、10 项 Python 发布工具测试、wrapper 官方摘要核验，以及 82 项 JVM 测试（24 个测试类，0 失败、0 错误、0 跳过）。Debug/Release Kotlin 与 Java 源代码编译已完成。构建使用 Temurin JDK 17.0.20.1、Gradle 9.8.0、SDK 37.2 和 Build Tools 37.0.0；Gradle 构建工具图确认 KGP 实际统一到 2.4.20。
-- 尚未完成：release lint、完整 APK/设备测试包、云端设备交互回归及正式签名核验。完整校验进程在 `lintAnalyzeRelease` / `mergeExtDexDebug` 阶段中断，尚未生成 lint 报告或完整 APK；不能把已通过的编译/JVM 测试扩称为完整构建通过。后续恢复验证后更新本条，不得以历史版本结果替代。
-- 发布前仍须遵守 `RELEASE.md` 的既有门禁；本轮未接触维护者电脑、MuMu 或 S25。未创建发布标签，未上传或覆盖正式资产。
+- 2026-10-04 恢复完整验证：[独立验证 CI](https://github.com/lyq2010/lees-music/actions/runs/37138097439) 在 `6559d1500deb993e499a3f606d69f5a41b3e09d9` 上通过 JVM、release lint、Debug APK/设备测试包构建、运行时声明一致性与云端 API 35 的 73 项设备回归。
+- 本机使用独立源码副本、专属 SDK 37.2 / Build Tools 37.0.0 及 `.audit` 包名完成 MuMu 73 项设备回归，全部通过；本地 10 项 Python 发布工具测试通过。正式应用与用户数据保留，本轮未在 S25 安装测试包。
+- 正式签名构建、包内容核验、GitHub 发布与双通道镜像仍由后续发布流程完成；发布提交的独立验证结果须在创建标签前复核。
 
 ## 1.0.2 曲库自动刷新
 
