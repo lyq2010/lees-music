@@ -4,7 +4,9 @@
 
 ## 当前版本
 
-- 当前源码为 1.0.3 / versionCode 7，计划标签 `v1.0.3`；依赖更新的独立验证与 MuMu 回归通过，待正式签名发布。包名 `com.lyq2010.leesmusic`，Android 8.0+，compileSdk 37.2、targetSdk 37。最新已发布版本仍为 1.0.2。
+- 当前已发布 1.0.3 / versionCode 7，标签 `v1.0.3`，发布提交 `c8e03f5c3564900538afa7ef1914b6601e527da9`。包名 `com.lyq2010.leesmusic`，Android 8.0+，compileSdk 37.2、targetSdk 37。
+- [1.0.3 GitHub Release](https://github.com/lyq2010/lees-music/releases/tag/v1.0.3) 的[正式构建 CI](https://github.com/lyq2010/lees-music/actions/runs/37139692030) 成功；[双通道镜像 CI](https://github.com/lyq2010/lee-releases/actions/runs/37140678448) 的 COS、R2 均成功。两通道清单、APK、源码包和校验文件摘要与 GitHub 发布资产一致，旧版 1.0.2 镜像资产均返回 404。
+- 1.0.3 正式 APK 为 2,959,178 字节，SHA-256 `57e09a7b807ec07a071a08729acfaae141e7ac07fafa1f6d71e570314ade23e7`；包名、versionCode 7、更新记录与对应源码已核验。签名证书 SHA-256 `e26eb294374fce5b845f6b09527c06017500c1ae14ca16b24779b3b7c044e966` 与 1.0.2 及既有正式版本一致。
 - [1.0.2 GitHub Release](https://github.com/lyq2010/lees-music/releases/tag/v1.0.2) 的[正式构建 CI](https://github.com/lyq2010/lees-music/actions/runs/36455731606) 成功，提交 `d3963eb`；[双通道镜像 CI](https://github.com/lyq2010/lee-releases/actions/runs/36457379361) 的 COS、R2 均成功。两通道清单、APK 摘要与 GitHub 发布资产一致，旧版 1.0.1 镜像资产返回 404。
 - 1.0.2 正式 APK 为 2,958,450 字节，SHA-256 `9e4a2026cd7f7982993b67c04c8221e8e38939670f65cb8b9b69f8f0e0f64ff2`；包名、versionCode 6、更新记录与对应源码已核验。
 - 上一版 [1.0.1 GitHub Release](https://github.com/lyq2010/lees-music/releases/tag/v1.0.1) 的[正式构建 CI](https://github.com/lyq2010/lees-music/actions/runs/36343261379) 成功，提交 `af41726`；[双通道镜像 CI](https://github.com/lyq2010/lee-releases/actions/runs/36344283217) 的 COS、R2 均成功。
@@ -49,7 +51,8 @@
 - 已完成：更新前后真实 Gradle 解析、运行时锁文件、声明生成及 `--check`、10 项 Python 发布工具测试、wrapper 官方摘要核验，以及 82 项 JVM 测试（24 个测试类，0 失败、0 错误、0 跳过）。Debug/Release Kotlin 与 Java 源代码编译已完成。构建使用 Temurin JDK 17.0.20.1、Gradle 9.8.0、SDK 37.2 和 Build Tools 37.0.0；Gradle 构建工具图确认 KGP 实际统一到 2.4.20。
 - 2026-10-04 恢复完整验证：[独立验证 CI](https://github.com/lyq2010/lees-music/actions/runs/37138097439) 在 `6559d1500deb993e499a3f606d69f5a41b3e09d9` 上通过 JVM、release lint、Debug APK/设备测试包构建、运行时声明一致性与云端 API 35 的 73 项设备回归。
 - 本机使用独立源码副本、专属 SDK 37.2 / Build Tools 37.0.0 及 `.audit` 包名完成 MuMu 73 项设备回归，全部通过；本地 10 项 Python 发布工具测试通过。正式应用与用户数据保留，本轮未在 S25 安装测试包。
-- 正式签名构建、包内容核验、GitHub 发布与双通道镜像仍由后续发布流程完成；发布提交的独立验证结果须在创建标签前复核。
+- 最终发布提交 `c8e03f5` 的[独立验证 CI](https://github.com/lyq2010/lees-music/actions/runs/37139019710) 在创建标签前通过：82 项 JVM、73 项云端设备测试，均为 0 失败、0 错误、0 跳过；release lint 为 0 错误、47 警告、4 提示。正式发布 CI 随后再次通过设备回归、JVM、lint、签名构建及包内容审计。
+- 下载的正式 APK 已独立执行签名、包名、版本、长度和 SHA-256 核验。源码归档的 217 个文件逐一与发布标签的 Git 对象一致；包内许可证、开源声明和更新记录均与对应源码一致。源码 ZIP 的 SHA-256 为 `4500ff96275a79a1d161ab312bf45415b7930d5a731092c37fe617a570ddb32b`。
 
 ## 1.0.2 曲库自动刷新
 
@@ -108,6 +111,7 @@ USB 日志确认：SM-S9310 / Android 16，GitHub 0.1.0 在 01:38:04、02:11:49�
 
 ## 本机环境与清理
 
+- 1.0.3 正式 APK、对应源码、更新清单、校验文件及 R8 映射保存于 `artifacts/release/1.0.3`。经用户确认，已删除本轮 `artifacts/work/1.0.3` 及 `D:\DevCache\lees-music-release-1.0.3-sdk`，释放 451,568,986 字节（约 430.6 MiB）；MuMu 的 `com.lyq2010.leesmusic.audit`、`com.lyq2010.leesmusic.audit.test` 已卸载。正式应用、原有测试包、用户数据、历史发布资产、原 SDK 与共享 Gradle 缓存保留。
 - 1.0.2 正式 APK、对应源码、更新清单、校验文件及 R8 映射保存于 `artifacts/release/1.0.2`。发布后已清理项目 `.gradle`、`.kotlin`、`build`、`app/build` 等可再生构建目录，释放约 25 MiB；正式应用、Git 仓库、源码测试与历史发布资产保留。
 - 1.0.1 发布后已删除本轮隔离测试目录、审计报告及证据、临时预览和项目可再生构建目录，合计约 446 MiB；MuMu 的 `com.lyq2010.leesmusic.audit`、`com.lyq2010.leesmusic.audit.test` 已卸载。正式应用、原有测试应用、Git 仓库、源码测试与发布资产保留。1.0.1 APK、对应源码、更新清单、校验文件及 R8 映射保存于 `artifacts/release/1.0.1`。
 - 1.0.0 发布验证后已清理项目 `.gradle`、`.kotlin`、`build`、`app/build` 和本轮临时截图目录，释放 157,794,200 字节（150.5 MiB）；MuMu 本轮 4 张测试截图及 3 个测试封面缓存已精确清理。保留模拟器应用数据、共享工具缓存和正式产物。正式 APK、对应源码、更新清单、校验文件及 R8 映射保存于 `artifacts/release/1.0.0`。
@@ -115,11 +119,11 @@ USB 日志确认：SM-S9310 / Android 16，GitHub 0.1.0 在 01:38:04、02:11:49�
 - 工作区 `D:\Desktop\codex\lees-music`，PowerShell 7；JDK `D:\Android\Android Studio\jbr`，SDK `D:\Android\Sdk`。
 - SDK adb 可用；MuMu 设备 `127.0.0.1:16384` 可用于回归。S25 安装与数据修改需要相应授权。
 - 5 个废弃小组件文件及 MuMu 的 4 张临时预览 PNG 已按授权删除，项目正式预览及测试源码保留。
-- 本轮已清理 `app/build`、`.gradle`、`.kotlin`，释放 156,082,263 字节（约 149 MiB）；保留 `.git`、源码、测试、正式发布产物、签名备份和模拟器用户数据。
+- 此前已清理 `app/build`、`.gradle`、`.kotlin`，释放 156,082,263 字节（约 149 MiB）；保留 `.git`、源码、测试、正式发布产物、签名备份和模拟器用户数据。
 - 发布采用单一通用 APK，包含四种现有 ABI。当前原生库体积很小，分架构只节省约 52 KiB，用户决定暂不拆包。
 
 ## 镜像保留策略
 
-COS 与 R2 均只保留最新已验证的音乐版本；参考 Lee’s Mail 的先验证再清理顺序。新 APK、源码、校验文件及更新清单通过核验后，才删除文件名精确匹配的旧版资产。GitHub 历史版本保留。清理范围和分页异常的 5 项测试通过。1.0.2 两个通道均已完成旧版清理，仅保留 1.0.2；GitHub 历史版本未删除。
+COS 与 R2 均只保留最新已验证的音乐版本；参考 Lee’s Mail 的先验证再清理顺序。新 APK、源码、校验文件及更新清单通过核验后，才删除文件名精确匹配的旧版资产。GitHub 历史版本保留。清理范围和分页异常的 5 项测试通过。两个通道均已完成 1.0.2 的旧版资产清理，当前保留 1.0.3；GitHub 历史版本未删除。
 
-1.0.2 远端正式 APK、对应源码、清单、校验文件和 R8 映射已下载到 `artifacts/release/1.0.2` 保存；旧版正式产物仍保留。镜像校验均在内存或临时目录处理，未额外留下临时文件。
+1.0.3 远端正式 APK、对应源码、清单、校验文件和 R8 映射已下载到 `artifacts/release/1.0.3` 保存；旧版正式产物仍保留。镜像校验均在内存中处理，未额外留下临时文件。
